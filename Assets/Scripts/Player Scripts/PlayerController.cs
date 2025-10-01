@@ -12,6 +12,8 @@ public class PlayerController : MonoBehaviour
 
     public ContactFilter2D movementFilter;
 
+    public _Attack attack_;
+
     Vector2 movementInput;
 
     Rigidbody2D rb;
@@ -22,6 +24,8 @@ public class PlayerController : MonoBehaviour
 
     List<RaycastHit2D> castCollision = new List<RaycastHit2D>();
     // Start is called before the first frame update
+
+    bool canMove = true;
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -37,36 +41,43 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (movementInput != Vector2.zero) 
+        if (canMove)
         {
-            bool success = TryToMove(movementInput);
-
-            if(!success)
+            if (movementInput != Vector2.zero)
             {
-                success = TryToMove(new Vector2(movementInput.x, 0));
+                bool success = TryToMove(movementInput);
+
                 if (!success)
                 {
-                    success = TryToMove(new Vector2(0, movementInput.y));
+                    success = TryToMove(new Vector2(movementInput.x, 0));
+                    if (!success)
+                    {
+                        success = TryToMove(new Vector2(0, movementInput.y));
+                    }
                 }
+
+                animator.SetBool("isMoving?", success);
+
+
+            }
+            else
+            {
+                animator.SetBool("isMoving?", false);
+
             }
 
-            animator.SetBool("isMoving?", success);
-            
-
+            if (movementInput.x > 0)
+            {
+                spriteRenderer.flipX = false;
+                
+            }
+            else if (movementInput.x < 0)
+            {
+                spriteRenderer.flipX = true;
+                
+            }
         }
-        else
-        {
-            animator.SetBool("isMoving?", false);
-        }
-
-        if(movementInput.x > 0)
-        {
-            spriteRenderer.flipX = false;
-        }
-        else if(movementInput.x < 0)
-        {
-            spriteRenderer.flipX = true;
-        }
+        
         
         
     }
@@ -107,5 +118,34 @@ public class PlayerController : MonoBehaviour
     void OnMove(InputValue movementValue)
     {
         movementInput = movementValue.Get<Vector2>();
+    }
+
+    void OnFire()
+    {
+        Debug.Log("Attacking");
+        animator.SetTrigger("Attack");
+    }
+
+    public void Attack()
+    {
+        LockMovement();
+        if(spriteRenderer.flipX == true)
+        {
+            attack_.AttackLeft();
+        }
+        else
+        {
+            attack_.AttackRight();
+        }
+    }
+
+    public void LockMovement()
+    {
+        canMove = false;
+    }
+
+    public void UnlockMovement()
+    {
+        canMove = true;
     }
 }
