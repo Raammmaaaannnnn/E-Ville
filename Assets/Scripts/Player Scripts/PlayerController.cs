@@ -92,27 +92,28 @@ public class PlayerController : MonoBehaviour
             castCollision,
             moveSpeed * Time.fixedDeltaTime * collisionOffset);
 
-        
+            
 
             if (count == 0) //Detection of incoming ray for collision item ** cannot move once collided
             {
                 rb.MovePosition(rb.position + direction * moveSpeed * Time.fixedDeltaTime);
-                Debug.Log("Moving");
-                return true;
+                Debug.Log("Moving & Collision = " + castCollision);
+               
             }
-            else
-            {
-                Debug.Log("NotMoving"); //The output once collided for various item needs to be set.
-                return false;
-            }
+            /* else
+             {
+                 Debug.Log("NotMoving"); //The output once collided for various item needs to be set.
+                 return false;
+             }*/
+            
         }
-        else
+        /*else
         {
             //no direction to move in so idle
             return false;
-        }
+        }*/
+        return true;
 
-        
     }
 
     void OnMove(InputValue movementValue)

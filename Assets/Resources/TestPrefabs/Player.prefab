@@ -180,7 +180,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 1
-  collisionOffset: 0.02
+  collisionOffset: 1
   movementFilter:
     useTriggers: 0
     useLayerMask: 0
