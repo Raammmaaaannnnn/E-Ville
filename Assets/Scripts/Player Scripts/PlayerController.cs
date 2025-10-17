@@ -87,10 +87,10 @@ public class PlayerController : MonoBehaviour
         if(direction != Vector2.zero)
         {
             int count = rb.Cast(
-            direction,
-            movementFilter,
-            castCollision,
-            moveSpeed * Time.fixedDeltaTime * collisionOffset);
+            direction, // input between -1 and 1
+            movementFilter,// where collision can occur on the layer
+            castCollision, // found collision are stored in here
+            moveSpeed * Time.fixedDeltaTime + collisionOffset); //amount to cast equates movement plust offset
 
             
 
@@ -100,18 +100,18 @@ public class PlayerController : MonoBehaviour
                 Debug.Log("Moving & Collision = " + castCollision);
                
             }
-            /* else
+             else
              {
                  Debug.Log("NotMoving"); //The output once collided for various item needs to be set.
                  return false;
-             }*/
+             }
             
         }
-        /*else
+        else
         {
             //no direction to move in so idle
             return false;
-        }*/
+        }
         return true;
 
     }
