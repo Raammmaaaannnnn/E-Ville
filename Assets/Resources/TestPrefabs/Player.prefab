@@ -13,8 +13,9 @@ GameObject:
   - component: {fileID: 7446804426788229657}
   - component: {fileID: 6774642216321155565}
   - component: {fileID: 9195182816736089714}
-  - component: {fileID: 957889769641581832}
   - component: {fileID: 6526369969670772152}
+  - component: {fileID: 4932328949411860983}
+  - component: {fileID: 6142380868962872035}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -128,19 +129,19 @@ Rigidbody2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3822402549462729548}
-  m_BodyType: 1
+  m_BodyType: 0
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
   m_LinearDrag: 0
   m_AngularDrag: 0.05
-  m_GravityScale: 1
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!61 &9195182816736089714
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -167,35 +168,6 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 0.0835771, y: 0.008451685}
   m_EdgeRadius: 0
---- !u!114 &957889769641581832
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3822402549462729548}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 115213c21d5fa4f4f9872d2e30c8724d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  moveSpeed: 1
-  collisionOffset: 0.02
-  movementFilter:
-    useTriggers: 0
-    useLayerMask: 0
-    useDepth: 0
-    useOutsideDepth: 0
-    useNormalAngle: 0
-    useOutsideNormalAngle: 0
-    layerMask:
-      serializedVersion: 2
-      m_Bits: 1
-    minDepth: 0
-    maxDepth: 0
-    minNormalAngle: 0
-    maxNormalAngle: 0
-  attack_: {fileID: 7218540950901884211}
 --- !u!95 &6526369969670772152
 Animator:
   serializedVersion: 5
@@ -217,6 +189,51 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &4932328949411860983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3822402549462729548}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c09b7d78de15c74b822e026ea57f674, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseDuration: 10
+  staggerStrength: 10
+--- !u!114 &6142380868962872035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3822402549462729548}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 115213c21d5fa4f4f9872d2e30c8724d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moveSpeed: 1
+  collisionOffset: 0.05
+  movementFilter:
+    useTriggers: 0
+    useLayerMask: 0
+    useDepth: 0
+    useOutsideDepth: 0
+    useNormalAngle: 0
+    useOutsideNormalAngle: 0
+    layerMask:
+      serializedVersion: 2
+      m_Bits: 1
+    minDepth: 0
+    maxDepth: 0
+    minNormalAngle: 0
+    maxNormalAngle: 0
+  attack_: {fileID: 7218540950901884211}
+  drunkEffect: {fileID: 4932328949411860983}
+  animator: {fileID: 6526369969670772152}
 --- !u!1 &8132518242052872293
 GameObject:
   m_ObjectHideFlags: 0
