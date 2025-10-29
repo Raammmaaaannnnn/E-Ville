@@ -169,6 +169,12 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    public void EndAttack()
+    {
+        UnlockMovement();   
+        attack_.StopAttack();
+    }
+
     public void LockMovement()
     {
         canMove = false;
@@ -178,4 +184,5 @@ public class PlayerController : MonoBehaviour
     {
         canMove = true;
     }
+
 }
