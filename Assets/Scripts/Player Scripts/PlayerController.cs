@@ -8,30 +8,17 @@ public class PlayerController : MonoBehaviour
 {
 
     [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] _Attack attack_Hitbox;
-    [Header("Attack Boxes")]
-    [SerializeField]
-    GameObject attackHitBoxLeftAndRight;
-    [SerializeField]
-    GameObject attackHitBoxDown;
-    [SerializeField]
-    GameObject attackHitBoxUp;
-
+    //[SerializeField] _Attack attack_Hitbox;
     private Rigidbody2D rb;
     private Vector2 moveInput;
+    private Vector2 lastMoveInput;
     private Animator animator;
-    private bool canMove = true;
+    public Transform Attack_aim;
+    private bool isMoving = true;
     private bool isAttacking = false;
     // Start is called before the first frame update
     void Start()
     {
-        GameObject attackHitBoxUp = GetComponent<GameObject>();
-        attackHitBoxUp.SetActive(false);
-        GameObject attackHitBoxDown = GetComponent<GameObject>();
-        attackHitBoxDown.SetActive(false);
-        GameObject attackHitBoxLeftAndRight = GetComponent<GameObject>();
-        attackHitBoxLeftAndRight.SetActive(false);
-
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
     }
@@ -39,58 +26,38 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (canMove) // Stop movement when attacking
+        rb.velocity = moveInput * moveSpeed;
+        if (isMoving) // Stop movement when attacking
         {
-            rb.velocity = moveInput * moveSpeed;
-        }
-        else
-        {
+            Vector3 vector3 = Vector3.left * moveInput.x + Vector3.down * moveInput.y;
+            Attack_aim.rotation = Quaternion.LookRotation(Vector3.forward, vector3);
 
-            rb.velocity = Vector2.zero;
-            
         }
-        //rb.velocity = moveInput * moveSpeed;
+        
     }
    
     public void Move(InputAction.CallbackContext context)
     {
-        //if (isAttacking) return; // Ignore movement input during attack
+        animator.SetBool("isMoving?", true);
 
-        //canMove = true;
-        //animator.SetBool("isMoving?", true);
-
-        //if (moveInput != Vector2.zero)//context.canceled)
-        //{
-        //    animator.SetBool("isMoving?", false);
-        //    //if (isAttacking) return;
-        //    animator.SetFloat("LastInputX", moveInput.x);
-        //    animator.SetFloat("LastInputY", moveInput.y);
-        //}
-        //moveInput = context.ReadValue<Vector2>();
-        //animator.SetFloat("InputXCurrent", moveInput.x);
-        //animator.SetFloat("InputYCurrent", moveInput.y);
-
+        if (context.canceled)
+        {
+            isMoving = false;
+            animator.SetBool("isMoving?", false);
+            //if (isAttacking) return;
+            animator.SetFloat("LastInputX", moveInput.x);
+            animator.SetFloat("LastInputY", moveInput.y);
+            Vector3 vector3 = Vector3.left * moveInput.x + Vector3.down * moveInput.y;
+            Attack_aim.rotation = Quaternion.LookRotation(Vector3.forward, vector3);
+        }
         moveInput = context.ReadValue<Vector2>();
-
-        if (!canMove)
-            moveInput = Vector2.zero;
-
-        // Update blend tree parameters
         animator.SetFloat("InputXCurrent", moveInput.x);
         animator.SetFloat("InputYCurrent", moveInput.y);
 
-        // Determine if player is moving
-        bool moving = moveInput.magnitude > 0.1f;
-        animator.SetBool("isMoving?", moving);
 
-        // Update last input for idle direction when moving
-        if (moving)
-        {
-            animator.SetFloat("LastInputX", moveInput.x);
-            animator.SetFloat("LastInputY", moveInput.y);
-        }
     }
 
+    /*
     public void OnAttackInput(InputAction.CallbackContext context)
     {
         if (context.performed && !isAttacking)
@@ -128,7 +95,7 @@ public class PlayerController : MonoBehaviour
         }
 
         
-        /*
+        
         if (context.performed && !isAttacking)
         {
             isAttacking = true;
@@ -140,7 +107,7 @@ public class PlayerController : MonoBehaviour
             else
                 attack_Hitbox.AttackRight();
 
-        }*/
+        }
     }
 
     // Called from Animation Event
@@ -151,7 +118,7 @@ public class PlayerController : MonoBehaviour
         canMove = true;
     }
 
-
+    */
 
 
 
