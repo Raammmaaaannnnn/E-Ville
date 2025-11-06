@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Pathfinding;
+using UnityEditor.Experimental.GraphView;
 
 public class Enemy : MonoBehaviour
 {
@@ -50,6 +51,11 @@ public class Enemy : MonoBehaviour
     private float chaseTimer = 0f;
     private bool isIdleChecking = false;
 
+    [Header("Enemy Combat")]
+    private KnockBack knockback;
+    public int health = 50;
+    
+
 
     private void Start()
     {
@@ -61,6 +67,7 @@ public class Enemy : MonoBehaviour
         }
 
         /////
+        knockback = GetComponent<KnockBack>();
         seeker = GetComponent<Seeker>();
         InvokeRepeating("UpdatePath", 0f, 0.5f); // recalc path every 0.5s
     }
@@ -152,7 +159,7 @@ public class Enemy : MonoBehaviour
             playerInAttackRange = false;
             return;
         }
-
+        
         Vector2 directionToPlayer = (target.position - transform.position).normalized;
         Vector2 startPos = transform.position;
         Vector2 endPos = startPos + directionToPlayer * attackDistance;
@@ -229,9 +236,11 @@ public class Enemy : MonoBehaviour
         // Deal damage if still in range
         if (playerInAttackRange && target != null)
         {
-            //var playerHealth = target.GetComponent<PlayerHealth>();
-            //if (playerHealth != null)
-            //    playerHealth.TakeDamage(attackDamage);
+            PlayerController player = target.GetComponent<PlayerController>();
+            if(player != null)
+            {
+                player.TakeDamage(attackDamage);
+            }
         }
 
         // Optional: small pause after attack
@@ -339,7 +348,6 @@ public class Enemy : MonoBehaviour
     }
 
 
-
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = playerDetected ? Color.red : Color.green;
@@ -348,7 +356,44 @@ public class Enemy : MonoBehaviour
         Gizmos.color = playerInAttackRange ? Color.blue : Color.black;
         Gizmos.DrawWireSphere(transform.position, attackDistance);
 
+    }
+
+    ////////////////////////////////////////////////////
+    ///
+    public void TakeDamage(int damage)//, GameObject attacker)
+    {
+        health -= damage;
         
+        StartCoroutine(BlinkRed(0.15f, 5));
+
+        if (health <= 0)
+        {
+            Die();
+        }
+    }
+
+    public void ApplyKnockback(Vector2 force)
+    {
         
+        rb.AddForce(force, ForceMode2D.Impulse);
+    }
+
+    public IEnumerator BlinkRed(float duration, int flashCount)
+    {
+        if (spriteRenderer == null) yield break;
+        float flashDuration = duration / (flashCount * 2); // time per half-flash
+        for (int i = 0; i < flashCount; i++)
+        {
+            spriteRenderer.color = Color.red; // red on
+            yield return new WaitForSeconds(flashDuration);
+            spriteRenderer.color = Color.white; // back to normal
+            yield return new WaitForSeconds(flashDuration);
+        }
+    }
+
+    private void Die()
+    {
+        // simple destroy for now
+        Destroy(gameObject);
     }
 }

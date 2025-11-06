@@ -17,10 +17,24 @@ public class PlayerController : MonoBehaviour
     [Header("Health Settings")]
     public float maxHealth = 100f;
     public float currentHealth;
-    public float knockbackForce = 3f;
-    public float invincibleTime = 1f;
-    private bool isInvincible = false;
 
+    [Header("Blink Effect Settings")]
+    public float blinkDuration = 0.1f;
+    
+    [Header("Attack Settings")]
+    public float attackRange = 0.35f;           // how far the linecast reaches
+    public LayerMask attackLayer;                 // layer mask for enemies
+    public int attackDamage = 10;
+    public float attackKnockbackForce = 0.5f;
+    public float enemyBlinkDuration = 0.8f;// force applied to enemy on hit
+    //only specific tag check as well:
+    public string enemyTag = "Enemy";
+
+    // Runtime
+    private bool EnemyInAttackRange = false;
+    private Collider2D detectedEnemyCollider = null; // last hit collider (if any)
+
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -30,17 +44,22 @@ public class PlayerController : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
 
         currentHealth = maxHealth;
+        
     }
 
     // Update is called once per frame
     void Update()
     {
         AdjustPlayerFacingDirection();
-        rb.velocity = moveInput * moveSpeed ;
-      
+        // perform short-range linecast every frame 
+        DetectEnemyForAttack();
+        rb.velocity = moveInput * moveSpeed;
+
+        
+
     }
 
-    
+
     public void Move(InputAction.CallbackContext context)
     {
 
@@ -54,6 +73,62 @@ public class PlayerController : MonoBehaviour
         moveInput = context.ReadValue<Vector2>();
         animator.SetFloat("InputXCurrent",moveInput.x);
         animator.SetFloat("InputYCurrent",moveInput.y);
+    }
+
+    public void OnFire(InputAction.CallbackContext context)
+    {
+        if (!context.performed) return; // only trigger once per press
+
+        if (EnemyInAttackRange && detectedEnemyCollider != null)
+        {
+            // Trigger attack animation
+            animator.SetTrigger("Attack");
+
+            // Deal damage and knockback to enemy
+            Enemy enemyScript = detectedEnemyCollider.GetComponent<Enemy>();
+            if (enemyScript != null)
+            {
+                enemyScript.TakeDamage(attackDamage);//, gameObject);
+            }
+        }
+    }
+
+    public void TakeDamage(int damage)
+    {
+        currentHealth -= damage;
+        if (currentHealth <= 0)
+        {
+            // death or respawn logic can go here
+            Debug.Log("Player died");
+            return;
+        }
+
+        // Blink effect
+        StartCoroutine(BlinkEffect(0.15f, 5));
+    }
+
+    private IEnumerator BlinkEffect(float duration, int flashCount)
+    {
+        if (spriteRenderer == null) yield break;
+        float flashDuration = duration / (flashCount * 2); // time per half-flash
+                                                           // Store original color
+        Color originalColor = spriteRenderer.color;
+
+        // Create faded version (half-transparent)
+        Color fadedColor = originalColor;
+        fadedColor.a = 0.5f; // 50% transparent
+
+        for (int i = 0; i < flashCount; i++)
+        {
+            spriteRenderer.color = fadedColor; // fade out
+            yield return new WaitForSeconds(flashDuration);
+
+            spriteRenderer.color = originalColor; // fade back
+            yield return new WaitForSeconds(flashDuration);
+        }
+
+        // ensure we end on normal color
+        spriteRenderer.color = originalColor;
     }
 
     private void AdjustPlayerFacingDirection()
@@ -71,54 +146,89 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+
+    // -------------------- Step 1: Attack detection --------------------
+
     /// <summary>
-    /// Health system
-    /// 
-
-    public void TakeDamage(float damage)
+    /// Performs a directional Linecast from the player towards the mouse world direction.
+    /// Sets enemyInAttackRange = true if an enemy (on enemyLayer and optionally with tag) was hit within attackRange.
+    /// </summary>
+    void DetectEnemyForAttack()
     {
-        if (isInvincible) return;
+        detectedEnemyCollider = null;
+        EnemyInAttackRange = false;
 
-        currentHealth -= damage;
-        StartCoroutine(DamageFlash());
+        // get mouse world position and direction from player to mouse
+        Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector3 dir = (mouseWorld - transform.position);
+        dir.z = 0f;
 
-        if (currentHealth <= 0)
+        if (dir.sqrMagnitude <= 0.0001f)
+            return; // guard
+
+        Vector2 dirNormalized = dir.normalized;
+        Vector2 startPos = transform.position;
+        Vector2 endPos = startPos + dirNormalized * attackRange;
+
+        // Linecast against the enemyLayer
+        RaycastHit2D hit = Physics2D.Linecast(startPos, endPos, attackLayer);
+
+        if (hit.collider != null)
         {
-            currentHealth = 0;
-            Die();
+            // If you also want to ensure a specific tag:
+            if (string.IsNullOrEmpty(enemyTag) || hit.collider.CompareTag(enemyTag))
+            {
+                EnemyInAttackRange = true;
+                detectedEnemyCollider = hit.collider;
+                Debug.Log("Enemy detected for attack: " + hit.collider.name);
+            }
+            else
+            {
+                EnemyInAttackRange = false;
+            }
+        }
+        else
+        {
+            EnemyInAttackRange = false;
+        }
+    }
+
+    // Draw gizmos to visualize the attack check in the Scene view
+    private void OnDrawGizmosSelected()
+    {
+        // Draw direction and range toward the mouse
+        if (!Application.isPlaying)
+        {
+            // Show a default forward line in editor when not playing using the sprite facing direction
+            Gizmos.color = Color.gray;
+            Gizmos.DrawLine(transform.position, transform.position + (spriteRenderer != null && spriteRenderer.flipX ? Vector3.left : Vector3.right) * attackRange);
+            return;
         }
 
-        StartCoroutine(InvincibilityFrames());
+        // When playing, draw actual detection line toward mouse
+        Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector2 dir = (mouseWorld - transform.position);
+        if (dir.sqrMagnitude <= 0.0001f)
+            return;
+
+        Vector2 dirNormalized = dir.normalized;
+        Vector3 endPos = transform.position + (Vector3)(dirNormalized * attackRange);
+
+        // color indicates if enemy is in range
+        Gizmos.color = EnemyInAttackRange ? Color.yellow : Color.gray;
+        Gizmos.DrawLine(transform.position, endPos);
+
+        // draw small sphere at the end of the check
+        Gizmos.DrawSphere(endPos, 0.05f);
+
+        // if we hit an enemy, highlight it
+        if (detectedEnemyCollider != null)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(detectedEnemyCollider.transform.position, 0.3f);
+        }
     }
 
-    private IEnumerator DamageFlash()
-    {
-        spriteRenderer.color = Color.red;
-        yield return new WaitForSeconds(0.15f);
-        spriteRenderer.color = Color.white;
-    }
 
-    private IEnumerator InvincibilityFrames()
-    {
-        isInvincible = true;
-        yield return new WaitForSeconds(invincibleTime);
-        isInvincible = false;
-    }
-
-    private void Die()
-    {
-        Debug.Log("Player has died!");
-        animator.SetBool("isMoving?", false);
-        rb.velocity = Vector2.zero;
-        // Optionally, disable controls
-        this.enabled = false;
-        // TODO: Add respawn or Game Over logic here later
-    }
-
-    // Optional: small knockback effect when taking damage
-    public void ApplyKnockback(Vector2 direction)
-    {
-        rb.AddForce(direction * knockbackForce, ForceMode2D.Impulse);
-    }
 
 }
