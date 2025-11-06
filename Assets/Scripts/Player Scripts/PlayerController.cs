@@ -50,20 +50,24 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if(PauseController.IsGamePaused)
+        {
+            rb.velocity = Vector2.zero;
+            animator.SetBool("isMoving?", false);
+            return;
+        }
+
         AdjustPlayerFacingDirection();
         // perform short-range linecast every frame 
         DetectEnemyForAttack();
         rb.velocity = moveInput * moveSpeed;
 
-        
-
+        animator.SetBool("isMoving?", rb.velocity.magnitude > 0);
     }
 
 
     public void Move(InputAction.CallbackContext context)
     {
-
-        animator.SetBool("isMoving?", true);
         if(context.canceled)
         {
             animator.SetBool("isMoving?", false);

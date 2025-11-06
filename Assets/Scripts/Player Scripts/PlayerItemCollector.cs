@@ -24,6 +24,7 @@ public class PlayerItemCollector : MonoBehaviour
                 if(itemAdded)
                 {
                     item.PickUp();
+                    SoundEffectManager.Play("ItemPickup");
                     Destroy(collision.gameObject);
                 }
             }
