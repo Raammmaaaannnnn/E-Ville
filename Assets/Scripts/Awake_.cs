@@ -15,6 +15,6 @@ public class Awake_ : MonoBehaviour
         }
 
         DontDestroyOnLoad(gameObject);
-        Debug.Log("Player persists: " + gameObject.name + " at Z=" + transform.position.z);
+        
     }
 }

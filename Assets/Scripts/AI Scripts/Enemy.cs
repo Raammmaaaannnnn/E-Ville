@@ -16,6 +16,11 @@ public class Enemy : MonoBehaviour
     public float detectionDistance = 1f; // linecast range
     public LayerMask playerLayer;
 
+    private List<RaycastHit2D> resultsList = new List<RaycastHit2D>();
+    private ContactFilter2D contactFilter;
+    private List<RaycastHit2D> attackResults = new List<RaycastHit2D>();
+    private ContactFilter2D attackFilter;
+
     [Header("Movement Settings")]
     public float speed = 2f;
 
@@ -65,6 +70,20 @@ public class Enemy : MonoBehaviour
         {
             patrolPoints[i] = patrolParent.GetChild(i);
         }
+        ////
+        ///
+
+        // Set up contact filter to only detect the player layer and optionally triggers
+        contactFilter = new ContactFilter2D();
+        contactFilter.SetLayerMask(playerLayer);
+        contactFilter.useTriggers = false; // set to true if player collider is a trigger
+
+        ///
+        ///
+        // Set up the contact filter for attack detection
+        attackFilter = new ContactFilter2D();
+        attackFilter.SetLayerMask(playerLayer); // whatever layer(s) the player is on
+        attackFilter.useTriggers = false;        // detect trigger colliders if needed
 
         /////
         knockback = GetComponent<KnockBack>();
@@ -130,26 +149,48 @@ public class Enemy : MonoBehaviour
 
     void DetectPlayer()
     {
+
         Vector2 direction = (target.position - transform.position).normalized;
-        Vector2 startPos = transform.position;
-        Vector2 endPos = startPos + direction * detectionDistance;
+        float distance = detectionDistance;
 
+        resultsList.Clear(); // clear previous hits
 
-        RaycastHit2D hit = Physics2D.Linecast(startPos, endPos, playerLayer);
+        int count = Physics2D.Raycast(transform.position, direction, contactFilter, resultsList, distance);
 
-        Debug.Log("Enemy persists: " + gameObject.name + " at Z=" + transform.position.z);
-        playerDetected = (hit.collider != null && hit.collider.CompareTag("Player"));
-        if (playerDetected && !isChasing)
+        playerDetected = false;
+
+        for (int i = 0; i < count; i++)
         {
-
-            chaseTimer = 0f;
-            Debug.Log("Player Detected");
-
+            if (resultsList[i].collider.CompareTag("Player"))
+            {
+                playerDetected = true;
+                Debug.Log("Player Detected via Raycast!");
+                break;
+            }
         }
-        else
-        {
-            Debug.Log("Player NOT Detected");
-        }
+
+        if (!playerDetected)
+            Debug.Log("Player NOT Detected via Raycast.");
+        //Vector2 direction = (target.position - transform.position).normalized;
+        //Vector2 startPos = transform.position;
+        //Vector2 endPos = startPos + direction * detectionDistance;
+
+
+        //RaycastHit2D hit = Physics2D.Linecast(startPos, endPos, playerLayer);
+
+        //Debug.Log("Enemy persists: " + gameObject.name + " at Z=" + transform.position.z);
+        //playerDetected = (hit.collider != null && hit.collider.CompareTag("Player"));
+        //if (playerDetected && !isChasing)
+        //{
+
+        //    chaseTimer = 0f;
+        //    Debug.Log("Player Detected");
+
+        //}
+        //else
+        //{
+        //    Debug.Log("Player NOT Detected");
+        //}
 
     }
 
@@ -161,24 +202,57 @@ public class Enemy : MonoBehaviour
             playerInAttackRange = false;
             return;
         }
-        
+
         Vector2 directionToPlayer = (target.position - transform.position).normalized;
-        Vector2 startPos = transform.position;
-        Vector2 endPos = startPos + directionToPlayer * attackDistance;
 
-        // Do a linecast only against the attackLayer (likely includes Player and obstacles)
-        RaycastHit2D hit = Physics2D.Linecast(startPos, endPos, playerLayer);
+        attackResults.Clear(); // clear previous results
 
-        if (hit.collider != null && hit.collider.CompareTag("Player"))
+        // Perform raycast with multiple hits
+        int hitCount = Physics2D.Raycast(
+            transform.position,
+            directionToPlayer,
+            attackFilter,
+            attackResults,
+            attackDistance
+        );
+
+        playerInAttackRange = false;
+
+        for (int i = 0; i < hitCount; i++)
         {
-            playerInAttackRange = true;
-            // Useful for debug logging:
-            Debug.Log("Player within attack range");
+            if (attackResults[i].collider.CompareTag("Player"))
+            {
+                playerInAttackRange = true;
+                Debug.Log("Player within attack range");
+                break; // no need to check other hits
+            }
         }
-        else
-        {
-            playerInAttackRange = false;
-        }
+
+        if (!playerInAttackRange)
+            Debug.Log("Player NOT in attack range");
+        //if (target == null)
+        //{
+        //    playerInAttackRange = false;
+        //    return;
+        //}
+
+        //Vector2 directionToPlayer = (target.position - transform.position).normalized;
+        //Vector2 startPos = transform.position;
+        //Vector2 endPos = startPos + directionToPlayer * attackDistance;
+
+        //// Do a linecast only against the attackLayer (likely includes Player and obstacles)
+        //RaycastHit2D hit = Physics2D.Linecast(startPos, endPos, playerLayer);
+
+        //if (hit.collider != null && hit.collider.CompareTag("Player"))
+        //{
+        //    playerInAttackRange = true;
+        //    // Useful for debug logging:
+        //    Debug.Log("Player within attack range");
+        //}
+        //else
+        //{
+        //    playerInAttackRange = false;
+        //}
     }
 
     /// <summary>
