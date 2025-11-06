@@ -1,50 +1,103 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class PubDoor : MonoBehaviour
 {
-    [SerializeField] string sceneToLoad;    // "PubScene"
-    [SerializeField] string spawnPointName; // "PubSpawn"
+    [SerializeField] private string sceneToLoad;
+    [SerializeField] private string spawnPointName;
+    [SerializeField] private float unloadDelay = 60f; // how long before unloading pub
+
+    private bool isInsidePub = false;
+    private Coroutine unloadCoroutine;
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("Player") && !isInsidePub)
         {
-            StartCoroutine(LoadSceneCoroutine());
+            StartCoroutine(EnterPub(other.gameObject));
+        }
+        else if (other.CompareTag("Player") && isInsidePub)
+        {
+            StartCoroutine(ExitPub(other.gameObject));
         }
     }
 
-    IEnumerator LoadSceneCoroutine()
+    private IEnumerator EnterPub(GameObject player)
     {
-        // Optionally play fade out animation
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSeconds(0.2f); // fade out time, optional
 
-        // Subscribe to sceneLoaded event
-        SceneManager.sceneLoaded += OnSceneLoaded;
+        // Load additively instead of replacing
+        if (!SceneManager.GetSceneByName(sceneToLoad).isLoaded)
+        {
+            AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneToLoad, LoadSceneMode.Additive);
+            while (!asyncLoad.isDone) yield return null;
+        }
 
-        // Load the scene
-        SceneManager.LoadScene(sceneToLoad);
-    }
-
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        // Find player and spawn point in the new scene
-        GameObject player = GameObject.FindWithTag("Player");
-        GameObject spawn = GameObject.Find(spawnPointName);
-
-        if (player != null && spawn != null)
+        // Move player to spawn inside the new scene
+        Scene pubScene = SceneManager.GetSceneByName(sceneToLoad);
+        GameObject spawn = FindObjectInScene(spawnPointName, pubScene);
+        if (spawn != null)
         {
             player.transform.position = spawn.transform.position;
-            Debug.Log("Player moved to spawn: " + spawn.name);
-        }
-        else
-        {
-            Debug.LogWarning("Player or spawn not found!");
         }
 
-        // Unsubscribe from the event
-        SceneManager.sceneLoaded -= OnSceneLoaded;
+        // Set this as the active scene so lighting/UI works properly
+        SceneManager.SetActiveScene(pubScene);
+
+        isInsidePub = true;
+
+        // Cancel any pending unload coroutine
+        if (unloadCoroutine != null)
+        {
+            StopCoroutine(unloadCoroutine);
+            unloadCoroutine = null;
+        }
+    }
+
+    private IEnumerator ExitPub(GameObject player)
+    {
+        yield return new WaitForSeconds(0.2f);
+
+        // Move player back to Town spawn
+        Scene townScene = SceneManager.GetSceneByName("TownScene");
+        GameObject spawn = FindObjectInScene("TownSpawn", townScene);
+        if (spawn != null)
+        {
+            player.transform.position = spawn.transform.position;
+        }
+
+        // Switch active scene back to Town
+        SceneManager.SetActiveScene(townScene);
+
+        isInsidePub = false;
+
+        // Start the delayed unload
+        unloadCoroutine = StartCoroutine(UnloadAfterDelay(unloadDelay));
+    }
+
+    private IEnumerator UnloadAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        if (SceneManager.GetSceneByName(sceneToLoad).isLoaded)
+        {
+            AsyncOperation asyncUnload = SceneManager.UnloadSceneAsync(sceneToLoad);
+            while (!asyncUnload.isDone) yield return null;
+            Debug.Log($"Unloaded scene {sceneToLoad} after {delay} seconds");
+        }
+
+        unloadCoroutine = null;
+    }
+
+    // Helper: find objects by name inside a specific scene
+    private GameObject FindObjectInScene(string name, Scene scene)
+    {
+        if (!scene.isLoaded) return null;
+        foreach (GameObject root in scene.GetRootGameObjects())
+        {
+            if (root.name == name) return root;
+        }
+        return null;
     }
 }

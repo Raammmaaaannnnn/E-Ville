@@ -38,8 +38,8 @@ public class Chest : MonoBehaviour, IInteractable
         //dropitem
         if(itemPrefab)
         {
-            GameObject droppedItem = Instantiate(itemPrefab, transform.position + Vector3.down, Quaternion.identity);
-            //droppedItem.GetComponent<BounceEffect>()
+            GameObject droppedItem = Instantiate(itemPrefab, transform.position + (Vector3.down * 0.3f), Quaternion.identity);
+            droppedItem.GetComponent<BounceEffect>().StartBounce();
         }
     }
 

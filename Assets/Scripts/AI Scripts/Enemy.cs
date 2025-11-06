@@ -134,9 +134,11 @@ public class Enemy : MonoBehaviour
         Vector2 startPos = transform.position;
         Vector2 endPos = startPos + direction * detectionDistance;
 
+
         RaycastHit2D hit = Physics2D.Linecast(startPos, endPos, playerLayer);
 
-        playerDetected = hit.collider != null && hit.collider.CompareTag("Player");
+        Debug.Log("Enemy persists: " + gameObject.name + " at Z=" + transform.position.z);
+        playerDetected = (hit.collider != null && hit.collider.CompareTag("Player"));
         if (playerDetected && !isChasing)
         {
 

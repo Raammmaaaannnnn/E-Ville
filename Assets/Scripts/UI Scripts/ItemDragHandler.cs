@@ -182,6 +182,8 @@ public class ItemDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         droppedInstance.transform.localScale = Vector3.one;
         droppedInstance.tag = "Item";
 
+        droppedInstance.GetComponent<BounceEffect>().StartBounce();
+
         Destroy(gameObject);
     }
 
