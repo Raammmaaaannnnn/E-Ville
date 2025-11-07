@@ -26,7 +26,7 @@ MonoBehaviour:
   - 'Hey.. Listen.. '
   - The Grass is greener only where you water it..
   autoProgressLines: 01010101010101010101
-  endDialougeLines: 00000000010000000001
+  endDialougeLines: 00000000000000000001
   autoProgressDelay: 1.5
   typingSpeed: 0.08
   voiceSound: {fileID: 8300000, guid: 37c8a46d9de764544afc95d2faee5669, type: 3}
