@@ -34,6 +34,7 @@ public class Chest : MonoBehaviour, IInteractable
     {
         
         SetOpened(true);
+        SoundEffectManager.Play("ChestOpen");
         animator.SetTrigger("isOpened?");
         //dropitem
         if(itemPrefab)

@@ -13,12 +13,32 @@ MonoBehaviour:
   m_Name: BartenderDialogue
   m_EditorClassIdentifier: 
   npcName: Bartender Jo
-  npcPotrait: {fileID: 0}
+  npcPotrait: {fileID: 21300000, guid: c0d30aaeb610b9e4bb724c4ede778042, type: 3}
   dialogueLines:
   - Hey There!!
   - What can I get for you today?
-  autoProgressLines: 0100
+  - 'Drinks it is.. '
+  - Reminder!!
+  - 'We serve 2 Drinks at a time '
+  - $10 for 2 Drinks.. Please
+  - Oh....interesting
+  - You're looking for some wisdom then,
+  - 'Hey.. Listen.. '
+  - The Grass is greener only where you water it..
+  autoProgressLines: 01010101010101010101
+  endDialougeLines: 00000000010000000001
   autoProgressDelay: 1.5
-  typingSpeed: 0.05
-  voiceSound: {fileID: 8300000, guid: 28d52632efcf5df45984f3c6ef91dc05, type: 3}
+  typingSpeed: 0.08
+  voiceSound: {fileID: 8300000, guid: 37c8a46d9de764544afc95d2faee5669, type: 3}
   voicePitch: 1
+  choices:
+  - dialogueIndex: 1
+    choices:
+    - Drinks..
+    - Bartender Wisdom
+    nextDialogueIndexes: 0200000006000000
+  - dialogueIndex: 5
+    choices:
+    - Here you go boss.
+    - This place is s*** . Overcharging the people.
+    nextDialogueIndexes: 0200000006000000

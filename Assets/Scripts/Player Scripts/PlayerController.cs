@@ -8,6 +8,8 @@ public class PlayerController : MonoBehaviour
 {
 
     [SerializeField] private float moveSpeed = 5f;
+    private bool playingFootsteps = false;
+    public float footstepsSpeed = 0.5f;
     
     private Rigidbody2D rb;
     private Vector2 moveInput;
@@ -54,6 +56,7 @@ public class PlayerController : MonoBehaviour
         {
             rb.velocity = Vector2.zero;
             animator.SetBool("isMoving?", false);
+            StopFootsteps();
             return;
         }
 
@@ -63,6 +66,16 @@ public class PlayerController : MonoBehaviour
         rb.velocity = moveInput * moveSpeed;
 
         animator.SetBool("isMoving?", rb.velocity.magnitude > 0);
+        
+        if (rb.velocity.magnitude > 0 && !playingFootsteps)
+        {
+            StartFootsteps();
+        }
+        else if(rb.velocity.magnitude == 0)
+        {
+            StopFootsteps();
+        }
+            
     }
 
 
@@ -71,12 +84,33 @@ public class PlayerController : MonoBehaviour
         if(context.canceled)
         {
             animator.SetBool("isMoving?", false);
+            
             animator.SetFloat("LastInputX", moveInput.x);
             animator.SetFloat("LastInputY", moveInput.y);
         }
         moveInput = context.ReadValue<Vector2>();
         animator.SetFloat("InputXCurrent",moveInput.x);
         animator.SetFloat("InputYCurrent",moveInput.y);
+    }
+
+    void StartFootsteps()
+    {
+        playingFootsteps = true;
+        InvokeRepeating(nameof(PlayFootsteps), 0f, footstepsSpeed);
+        
+    }
+
+
+    void StopFootsteps()
+    {
+        playingFootsteps = false;
+        CancelInvoke(nameof(PlayFootsteps));
+    }
+
+
+    void PlayFootsteps()
+    {
+        SoundEffectManager.Play("Footsteps", true);
     }
 
     public void OnFire(InputAction.CallbackContext context)

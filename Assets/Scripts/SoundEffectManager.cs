@@ -6,7 +6,11 @@ using UnityEngine.UI;
 public class SoundEffectManager : MonoBehaviour
 {
     private static SoundEffectManager instance;
+
+
     private static AudioSource audioSource;
+    private static AudioSource randomPitchAudioSource;
+    private static AudioSource voiceAudioSource;
     private static SoundEffectLibrary soundEffectLibrary;
     [SerializeField] private Slider sfxSlider;
 
@@ -16,7 +20,10 @@ public class SoundEffectManager : MonoBehaviour
         if(instance == null)
         {
             instance = this;
-            audioSource = GetComponent<AudioSource>();
+            AudioSource[] audioSources = GetComponents<AudioSource>();
+            audioSource = audioSources[0];
+            randomPitchAudioSource = audioSources[1];
+            voiceAudioSource = audioSources[2];
             soundEffectLibrary = GetComponent<SoundEffectLibrary>();    
             DontDestroyOnLoad(gameObject);
         }
@@ -26,14 +33,29 @@ public class SoundEffectManager : MonoBehaviour
         }
     }
 
-    public static void Play(string soundName)
+    public static void Play(string soundName, bool randomPitch = false)
     {
         AudioClip audioClip = soundEffectLibrary.GetRandomClip(soundName);
         if(audioClip != null)
         {
-            audioSource.PlayOneShot(audioClip);
+            if(randomPitch)
+            {
+                randomPitchAudioSource.pitch = Random.Range(0.5f, 1.5f);
+                randomPitchAudioSource.PlayOneShot(audioClip);
+            }
+            else
+            {
+                audioSource.PlayOneShot(audioClip);
+            }
+            
         }
         
+    }
+
+    public static void PlayVoice(AudioClip audioClip, float pitch = 1f)
+    {
+        voiceAudioSource.pitch = pitch;
+        voiceAudioSource.PlayOneShot(audioClip);
     }
     // Start is called before the first frame update
     void Start()
@@ -44,6 +66,8 @@ public class SoundEffectManager : MonoBehaviour
     public static void SetVolume(float volume)
     {
         audioSource.volume = volume;
+        randomPitchAudioSource.volume = volume;
+        voiceAudioSource.volume = volume;
     }
 
     public void OnvalueChanged()

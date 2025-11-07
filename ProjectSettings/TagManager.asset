@@ -11,6 +11,7 @@ TagManager:
   - UIRoot
   - CineCamera
   - MinimapCamera
+  - NPC
   layers:
   - Default
   - TransparentFX
