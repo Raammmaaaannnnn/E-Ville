@@ -19,6 +19,14 @@ PrefabInstance:
       propertyPath: Name
       value: Meds
       objectReference: {fileID: 0}
+    - target: {fileID: -1231852992899903024, guid: e7b233173f6256e4ca8e55e852c15612, type: 3}
+      propertyPath: isVariant
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -1231852992899903024, guid: e7b233173f6256e4ca8e55e852c15612, type: 3}
+      propertyPath: variantID
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3712344755415040840, guid: e7b233173f6256e4ca8e55e852c15612, type: 3}
       propertyPath: m_Name
       value: Medipack

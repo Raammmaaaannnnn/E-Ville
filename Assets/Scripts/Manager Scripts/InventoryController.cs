@@ -14,6 +14,19 @@ public class InventoryController : MonoBehaviour
     public GameObject[] itemPrefabs;
 
 
+    public static InventoryController Instance {  get; private set; }
+
+    private void Awake()
+    {
+        if(Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+    }
+
+
     // Start is called before the first frame update
     void Start()
     {
@@ -31,16 +44,57 @@ public class InventoryController : MonoBehaviour
         //}
     }
 
+    public Slot GetFirstEmptySlot()
+    {
+        foreach (Transform slotTransform in inventoryPanel.transform)
+        {
+            Slot slot = slotTransform.GetComponent<Slot>();
+            if (slot != null && slot.currentItem == null) return slot;
+        }
+        return null;
+    }
+
     public bool AddItem(GameObject itemPrefab)
     {
-        foreach(Transform slotTransform in inventoryPanel.transform)
+        //Item itemtoAdd = itemPrefab.GetComponent<Item>();
+        //if(itemtoAdd == null) return false;
+
+        ////check if we have this item in the inventory
+        //foreach (Transform slotTransform in inventoryPanel.transform)
+        //{
+        //    Slot slot = slotTransform.GetComponent<Slot>();
+        //    if (slot != null && slot.currentItem != null)
+        //    {
+        //        Item slotItem = slot.currentItem.GetComponent<Item>();
+        //        if (slotItem != null && slotItem.ID == itemtoAdd.ID)
+        //        {
+        //            //stack
+        //            slotItem.AddToStack();
+        //            return true;
+        //        }
+        //    }
+        //}
+
+
+        // look for empty slot
+        foreach (Transform slotTransform in inventoryPanel.transform)
         {
             Slot slot = slotTransform.GetComponent<Slot>();
             if(slot != null && slot.currentItem == null)
             {
                 GameObject newItem = Instantiate(itemPrefab, slotTransform);
+                // Make sure its scale/UI is reset
+                newItem.transform.localScale = Vector3.one;
                 newItem.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
                 slot.currentItem = newItem;
+
+                // Optional: Make sure quantity display is correct
+                Item itemComponent = newItem.GetComponent<Item>();
+                if (itemComponent != null)
+                    itemComponent.UpdateQuantityDisplay();
+
+
+
                 return true;
             }
         }
@@ -59,7 +113,12 @@ public class InventoryController : MonoBehaviour
             if (slot.currentItem != null)
             {
                 Item item = slot.currentItem.GetComponent<Item>();
-                invData.Add(new InventorySaveData { itemID = item.ID, slotIndex = slotTransform.GetSiblingIndex() });
+                invData.Add(new InventorySaveData 
+                { 
+                    itemID = item.ID, 
+                    slotIndex = slotTransform.GetSiblingIndex(), 
+                    //quantity = item.quantity
+                });
 
             }
         }
@@ -90,6 +149,15 @@ public class InventoryController : MonoBehaviour
                 {
                     GameObject item = Instantiate(itemPrefab, slot.transform);
                     item.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+                    
+                    //Item itemComponent = item.GetComponent<Item>();
+                    //if(itemComponent != null && data.quantity > 1)
+                    //{
+                    //    itemComponent.quantity = data.quantity;
+                    //    itemComponent.UpdateQuantityDisplay();
+                    //}
+                    
+                    
                     slot.currentItem = item;
 
                 }
