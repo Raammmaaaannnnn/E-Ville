@@ -7,7 +7,7 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
 
-    [SerializeField] private float moveSpeed = 5f;
+    public float moveSpeed = 0.7f;
     private bool playingFootsteps = false;
     public float footstepsSpeed = 0.5f;
     
