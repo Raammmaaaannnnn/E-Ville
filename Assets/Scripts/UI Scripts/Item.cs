@@ -13,6 +13,7 @@ public class Item : MonoBehaviour
     public bool isVariant = false;
     public int variantID = 0; // Only used if isVariant = true
     private TMP_Text quantityText;
+    private bool IsAlcoholVariant;
 
     [HideInInspector] public bool isUIItem = true;
 
@@ -74,9 +75,31 @@ public class Item : MonoBehaviour
 
     public virtual void UseItem()
     {
-        Debug.Log("Using item " + Name);
+        // By name check
+        string lowerName = Name.ToLower();
+        if(lowerName.Contains("cosita") || lowerName.Contains("pina") || lowerName.Contains("blu"))
+        {
+            IsAlcoholVariant = true;
+            
+        }
+        // By ID or variantID check (for extra safety)
+        if ((ID == 4 && variantID == 3) || (ID == 5 && variantID == 4) || (ID == 6 && variantID == 5))
+        {
+            IsAlcoholVariant = true;
+            
+        }
+        
+        if(IsAlcoholVariant)
+        {
+            Debug.Log("Using alcohol " + Name);
+        }
+        else
+        {
+            Debug.Log("Using item " + Name);
+        }
+        
     }
-    public virtual void PickUp()
+    public virtual void ShowPopup()
     {
         Sprite itemIcon = GetComponent<Image>().sprite;
         if(ItemPick_PopupUIController.Instance != null )
@@ -84,6 +107,7 @@ public class Item : MonoBehaviour
             ItemPick_PopupUIController.Instance.ShowItemPickup(Name, itemIcon);
         }
     }
+
 
     public static implicit operator GameObject(Item v)
     {

@@ -13,8 +13,11 @@ public class NPC : MonoBehaviour, IInteractable
     private DialogueController dialogueUI;  
     private int dialogueIndex;
     private bool isTyping, isDialogueActive;
+    
+    private enum QuestState { NotStarted, InProgress, Completed}
+    private QuestState questState = QuestState.NotStarted;
 
-    void Awake()
+    private void Awake()
     {
         // Optional: cache the instance once
         if (DialogueController.Instance != null)
@@ -23,19 +26,23 @@ public class NPC : MonoBehaviour, IInteractable
         }
     }
 
+   
+
     public bool canInteract()
     {
-        return !isDialogueActive;
+        return !isDialogueActive; 
     }
 
     public void Interact()
     {
-        if(dialogueData == null || (PauseController.IsGamePaused && !isDialogueActive))
+        
+
+        if (dialogueData == null || (PauseController.IsGamePaused && !isDialogueActive))
         {
             return;
         }
         
-        if (isDialogueActive )
+        if (isDialogueActive)
         {
             NextLine();
         }
@@ -58,8 +65,28 @@ public class NPC : MonoBehaviour, IInteractable
             dialogueUI = DialogueController.Instance;
         }
 
+        //sync with quest
+        SyncQuestState();
+
+        //set dialogue line based on quest state
+        if(questState == QuestState.NotStarted)
+        {
+            dialogueIndex = 0;
+        }
+        else if (questState == QuestState.InProgress)
+        {
+            dialogueIndex = dialogueData.questInProgressIndex;
+        }
+        else if(questState == QuestState.Completed)
+        {
+            dialogueIndex = dialogueData.questCompleteIndex;
+        }
+        else
+        {
+            dialogueIndex = 0;
+        }
         isDialogueActive = true;
-        dialogueIndex = 0;
+        
 
         
         dialogueUI.SetNPCInfo(dialogueData.npcName, dialogueData.npcPotrait);
@@ -67,6 +94,30 @@ public class NPC : MonoBehaviour, IInteractable
         
         PauseController.SetPause(true);
         DisplayCurrentLine();
+    }
+
+    private void SyncQuestState()
+    {
+        if (dialogueData.quest == null) return;
+
+        string questID = dialogueData.quest.questID;
+
+        //update add completing quest and handing in reward
+        if(QuestController.Instance.IsQuestCompleted(questID) || QuestController.Instance.IsQuestHandedIn(questID))
+        {
+            questState = QuestState.Completed;
+        }
+        else if(QuestController.Instance.IsQuestActive(questID))
+        {
+            questState = QuestState.InProgress;
+
+        }
+        else
+        {
+            questState = QuestState.NotStarted;
+        }
+
+
     }
 
     void NextLine()
@@ -134,15 +185,63 @@ public class NPC : MonoBehaviour, IInteractable
         for(int i = 0; i < choice.choices.Length; i++)
         {
             int nextIndex = choice.nextDialogueIndexes[i];
-            dialogueUI.CreateChoiceButton(choice.choices[i], () => ChooseOption(nextIndex) );
+            bool givesQuest = choice.givesQuest[i];
+
+            // New: coin spending
+            bool spendsCoins = choice.spendsCoins != null && choice.spendsCoins.Length > i && choice.spendsCoins[i];
+            int coinCost = choice.coinCost != null && choice.coinCost.Length > i ? choice.coinCost[i] : 0;
+
+            int rewardID = choice.alcoholRewardID != null && choice.alcoholRewardID.Length > i ? choice.alcoholRewardID[i] : 0;
+
+            //dialogueUI.CreateChoiceButton(choice.choices[i], () => ChooseOption(nextIndex, givesQuest) );
+
+            dialogueUI.CreateChoiceButton(
+                choice.choices[i],
+                () => ChooseOption(nextIndex, givesQuest, spendsCoins, coinCost, rewardID));
         }
     }
 
-    void ChooseOption(int nextIndex)
+    void ChooseOption(int nextIndex, bool givesQuest /*here*/ , bool spendsCoins = false, int coinCost = 0, int alcoholRewardID = 0)
     {
+
+        if (spendsCoins)
+        {
+            if (CoinUIController.Instance.GetCurrentCoins() >= coinCost)
+            {
+                CoinUIController.Instance.SpendCoins(coinCost);
+                // optional: trigger item/bonus after spending
+                Debug.Log($"Spent {coinCost} coins for choice {nextIndex}");
+                // Give alcohol reward
+                if (alcoholRewardID != 0)
+                {
+                    RewardsController.Instance.GiveItemReward(alcoholRewardID, 1);
+                }
+            }
+            else
+            {
+                Debug.Log("Not enough coins!");
+                return; // prevent progressing to next line if insufficient coins
+            }
+        }
+
+        if (givesQuest)
+        {
+            QuestController.Instance.AcceptQuest(dialogueData.quest);
+            questState = QuestState.InProgress;
+        }
+
         dialogueIndex = nextIndex;
         dialogueUI.ClearChoices();
         DisplayCurrentLine();
+
+        //if (givesQuest)
+        //{
+        //    QuestController.Instance.AcceptQuest(dialogueData.quest);
+        //    questState = QuestState.InProgress;
+        //}
+        //dialogueIndex = nextIndex;
+        //dialogueUI.ClearChoices();
+        //DisplayCurrentLine();
     }
 
     void DisplayCurrentLine()
@@ -153,11 +252,28 @@ public class NPC : MonoBehaviour, IInteractable
 
     public void EndDialogue()
     {
+        if(questState == QuestState.Completed && !QuestController.Instance.IsQuestHandedIn(dialogueData.quest.questID) )
+        {
+            //handle quest completion
+            HandleQuestCompletion(dialogueData.quest);
+
+        }
+
         StopAllCoroutines();
         isDialogueActive = false;
         dialogueUI.SetDialogueText("");
         dialogueUI.ShowDialogueUI(false);
         PauseController.SetPause(false);
 
+       
     }
+
+
+    void HandleQuestCompletion(Quest quest)
+    {
+        RewardsController.Instance.GiveQuestReward(quest);
+        QuestController.Instance.HandInQuest(quest.questID);
+    }
+
+    
 }

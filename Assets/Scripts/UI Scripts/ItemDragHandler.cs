@@ -237,6 +237,7 @@ public class ItemDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 
         Destroy(gameObject);
 
+        InventoryController.Instance.RebuildItemCounts();
 
     }
 
@@ -311,8 +312,10 @@ public class ItemDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         }
 
         Destroy(gameObject);
+
+        InventoryController.Instance.RebuildItemCounts();
     }
 
-
+    
 
 }

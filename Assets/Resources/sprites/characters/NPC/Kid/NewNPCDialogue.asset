@@ -15,14 +15,16 @@ MonoBehaviour:
   npcName: Kid
   npcPotrait: {fileID: 21300000, guid: 03bc45170366be24797827c37025fd1e, type: 3}
   dialogueLines:
-  - My dad's in the Pub.
-  - Are you going in too?
-  - He's the bartender.
-  - ' He''s got some magic drinks.'
+  - 'Hey '
+  - Can you help me?
+  - Can you get the jars?
+  - Thanks.
   - Oh well...
-  - You will miss the magic drinks..
-  autoProgressLines: 010101010101
-  endDialougeLines: 000000010001
+  - 'I need more '
+  - 'Hurrayy!! '
+  - There's your reward.
+  autoProgressLines: 0100000001000100
+  endDialougeLines: 0000000101010001
   autoProgressDelay: 1.5
   typingSpeed: 0.05
   voiceSound: {fileID: 8300000, guid: 37c8a46d9de764544afc95d2faee5669, type: 3}
@@ -33,3 +35,19 @@ MonoBehaviour:
     - Yes
     - No
     nextDialogueIndexes: 0200000004000000
+    givesQuest: 0100
+    spendsCoins: 0000
+    coinCost: 
+    alcoholRewardID: 
+  - dialogueIndex: 2
+    choices:
+    - Sure I will..
+    - No
+    nextDialogueIndexes: 0300000004000000
+    givesQuest: 0100
+    spendsCoins: 0000
+    coinCost: 
+    alcoholRewardID: 
+  questInProgressIndex: 5
+  questCompleteIndex: 6
+  quest: {fileID: 11400000, guid: 72e8cb8b43ca1194191782953f7c5f39, type: 2}

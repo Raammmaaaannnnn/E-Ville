@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using static UnityEditor.Progress;
@@ -16,6 +17,10 @@ public class InventoryController : MonoBehaviour
 
     public static InventoryController Instance {  get; private set; }
 
+    Dictionary<(int id, int variantID), int> itemsCountCache = new();
+
+    public event Action OnInventoryChanged; //event to notify quest system.
+
     private void Awake()
     {
         if(Instance != null && Instance != this)
@@ -31,7 +36,7 @@ public class InventoryController : MonoBehaviour
     void Start()
     {
         itemDictionary = FindAnyObjectByType<ItemDictionary>();
-
+        RebuildItemCounts();
         //for (int i = 0; i < slotCount; i++)
         //{ 
         //    Slot slot = Instantiate(slotPrefab, inventoryPanel.transform).GetComponent<Slot>(); 
@@ -44,6 +49,58 @@ public class InventoryController : MonoBehaviour
         //}
     }
 
+    public void RebuildItemCounts()
+    {
+        itemsCountCache.Clear();
+
+        foreach( Transform slotTransform in inventoryPanel.transform )
+        {
+            Slot slot = slotTransform. GetComponent<Slot>();
+            if(slot.currentItem !=null)
+            {
+                Item item = slot.currentItem.GetComponent<Item>();
+
+                if(item != null )
+                {
+                    var key = (item.ID, item.isVariant ? item.variantID : 0);
+                    itemsCountCache[key] = itemsCountCache.GetValueOrDefault(key, 0) + item.quantity;
+                }
+            }
+        }
+
+        OnInventoryChanged?.Invoke();
+    }
+
+    public Dictionary<(int id, int variantID), int> GetItemCounts() => itemsCountCache;
+
+    // 🧰 Helper: total count for an item (variant optional)
+    public int GetItemCount(int id, int variantID = 0)
+    {
+        var key = (id, variantID);
+        return itemsCountCache.TryGetValue(key, out int count) ? count : 0;
+    }
+
+    // 🔹 Cache helpers
+    public void AddToCache(Item item)
+    {
+        var key = (item.ID, item.isVariant ? item.variantID : 0);
+        itemsCountCache[key] = itemsCountCache.GetValueOrDefault(key, 0) + item.quantity;
+        OnInventoryChanged?.Invoke();
+    }
+
+    public void RemoveFromCache(Item item, int amount)
+    {
+        var key = (item.ID, item.isVariant ? item.variantID : 0);
+        if (!itemsCountCache.ContainsKey(key)) return;
+
+        itemsCountCache[key] -= amount;
+        if (itemsCountCache[key] <= 0)
+            itemsCountCache.Remove(key);
+
+        OnInventoryChanged?.Invoke();
+    }
+
+
     public Slot GetFirstEmptySlot()
     {
         foreach (Transform slotTransform in inventoryPanel.transform)
@@ -54,28 +111,10 @@ public class InventoryController : MonoBehaviour
         return null;
     }
 
+   
+
     public bool AddItem(GameObject itemPrefab)
     {
-        //Item itemtoAdd = itemPrefab.GetComponent<Item>();
-        //if(itemtoAdd == null) return false;
-
-        ////check if we have this item in the inventory
-        //foreach (Transform slotTransform in inventoryPanel.transform)
-        //{
-        //    Slot slot = slotTransform.GetComponent<Slot>();
-        //    if (slot != null && slot.currentItem != null)
-        //    {
-        //        Item slotItem = slot.currentItem.GetComponent<Item>();
-        //        if (slotItem != null && slotItem.ID == itemtoAdd.ID)
-        //        {
-        //            //stack
-        //            slotItem.AddToStack();
-        //            return true;
-        //        }
-        //    }
-        //}
-
-
         // look for empty slot
         foreach (Transform slotTransform in inventoryPanel.transform)
         {
@@ -91,9 +130,10 @@ public class InventoryController : MonoBehaviour
                 // Optional: Make sure quantity display is correct
                 Item itemComponent = newItem.GetComponent<Item>();
                 if (itemComponent != null)
+                {
                     itemComponent.UpdateQuantityDisplay();
-
-
+                    AddToCache(itemComponent);
+                }
 
                 return true;
             }
@@ -163,6 +203,33 @@ public class InventoryController : MonoBehaviour
                 }
             }
         }
+
+        RebuildItemCounts();
+    }
+
+
+    public void RemoveItemsFromInventory(int itemID, int variantID, int amountToRemove)
+    {
+        foreach(Transform slotTransform in inventoryPanel.transform)
+        {
+            if (amountToRemove <= 0) break;
+
+            Slot slot = slotTransform.GetComponent<Slot>();
+            if(slot?.currentItem?.GetComponent<Item>() is Item item && item.ID == itemID && item.variantID == variantID)
+            {
+                int removed = Mathf.Min(amountToRemove, item.quantity);
+                item.RemoveFromStack(removed);
+                amountToRemove -= removed;
+
+                if(item.quantity ==0)
+                {
+                    Destroy(slot.currentItem);
+                    slot.currentItem = null;
+                }
+            }
+        }
+
+        RebuildItemCounts();
     }
 
 }

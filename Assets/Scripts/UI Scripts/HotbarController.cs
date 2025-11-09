@@ -44,6 +44,8 @@ public class HotbarController : MonoBehaviour
         {
             Item item = slot.currentItem.GetComponent<Item>();
             item.UseItem();
+
+            
         }
 
     }
@@ -96,4 +98,7 @@ public class HotbarController : MonoBehaviour
             }
         }
     }
+
+
+
 }

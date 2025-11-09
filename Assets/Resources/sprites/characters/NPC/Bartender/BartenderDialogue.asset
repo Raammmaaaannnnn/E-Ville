@@ -20,15 +20,20 @@ MonoBehaviour:
   - 'Drinks it is.. '
   - Reminder!!
   - 'We serve 2 Drinks at a time '
-  - $10 for 2 Drinks.. Please
+  - It's $1 for 1 Drinks.. Please
   - Oh....interesting
   - You're looking for some wisdom then,
   - 'Hey.. Listen.. '
   - The Grass is greener only where you water it..
-  autoProgressLines: 01010101010101010101
-  endDialougeLines: 00000000000000000001
+  - Here's your strong poison
+  - Do some quests and earn money.
+  - Then you can come back for it.
+  - ......................
+  - ......................
+  autoProgressLines: 0100010101000101010000010000
+  endDialougeLines: 000000000000000000010100010101
   autoProgressDelay: 1.5
-  typingSpeed: 0.08
+  typingSpeed: 0.05
   voiceSound: {fileID: 8300000, guid: 37c8a46d9de764544afc95d2faee5669, type: 3}
   voicePitch: 1
   choices:
@@ -37,8 +42,19 @@ MonoBehaviour:
     - Drinks..
     - Bartender Wisdom
     nextDialogueIndexes: 0200000006000000
+    givesQuest: 0000
+    spendsCoins: 0000
+    coinCost: 
+    alcoholRewardID: 
   - dialogueIndex: 5
     choices:
     - Here you go boss.
-    - This place is s*** . Overcharging the people.
-    nextDialogueIndexes: 0200000006000000
+    - Oh..I thought it was free.
+    nextDialogueIndexes: 0a0000000b000000
+    givesQuest: 0000
+    spendsCoins: 0100
+    coinCost: 0100000000000000
+    alcoholRewardID: 0500000000000000
+  questInProgressIndex: 0
+  questCompleteIndex: 0
+  quest: {fileID: 0}
