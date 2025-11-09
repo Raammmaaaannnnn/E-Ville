@@ -10683,15 +10683,15 @@ Camera:
   m_FocalLength: 50
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: 0.0010649627
+    x: 0.0008841733
     y: 0
-    width: 0.9968051
-    height: 1
+    width: 0.99734753
+    height: 0.99999994
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 1.32
+  orthographic size: 1.06
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -18023,7 +18023,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.392}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.08627451}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
