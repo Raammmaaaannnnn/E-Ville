@@ -28,10 +28,8 @@ MonoBehaviour:
   - Here's your strong poison
   - Do some quests and earn money.
   - Then you can come back for it.
-  - ......................
-  - ......................
   autoProgressLines: 0100010101000101010000010000
-  endDialougeLines: 000000000000000000010100010101
+  endDialougeLines: 00000000000000000001010001
   autoProgressDelay: 1.5
   typingSpeed: 0.05
   voiceSound: {fileID: 8300000, guid: 37c8a46d9de764544afc95d2faee5669, type: 3}

@@ -75,6 +75,7 @@ public class Item : MonoBehaviour
 
     public virtual void UseItem()
     {
+        IsAlcoholVariant = false; // <-- reset every time before checks
         // By name check
         string lowerName = Name.ToLower();
         if(lowerName.Contains("cosita") || lowerName.Contains("pina") || lowerName.Contains("blu"))
@@ -92,6 +93,7 @@ public class Item : MonoBehaviour
         if(IsAlcoholVariant)
         {
             Debug.Log("Using alcohol " + Name);
+            DrunkEffectController.Instance.ApplyDrunkEffect();
         }
         else
         {

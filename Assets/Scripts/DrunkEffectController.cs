@@ -48,11 +48,6 @@ public class DrunkEffectController : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.C) && !isRedLocked)
-        {
-            ApplyDrunkEffect();
-        }
-
         // Live lens distortion fluctuation (if active)
         if (isEffectActive && lensDistortion != null)
         {
@@ -71,12 +66,16 @@ public class DrunkEffectController : MonoBehaviour
 
     public void ApplyDrunkEffect()
     {
+        if (isRedLocked) return;
+        intoxication.DrinkAlcohol();
         StartCoroutine(HandleDrunkEffect());
     }
 
+    
     private IEnumerator HandleDrunkEffect()
     {
         PlayerIntoxication.IntoxicationLevel level = intoxication.currentLevel;
+
         isEffectActive = true;
 
         switch (level)

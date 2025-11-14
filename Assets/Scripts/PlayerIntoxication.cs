@@ -24,14 +24,6 @@ public class PlayerIntoxication : MonoBehaviour
             IntoxicationUIController.Instance.UpdateIntoxicationUI(currentLevel, 0f);
     }
 
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.C))
-        {
-            DrinkAlcohol();
-        }
-    }
-
     public void DrinkAlcohol()
     {
         if (isRedPermanent)

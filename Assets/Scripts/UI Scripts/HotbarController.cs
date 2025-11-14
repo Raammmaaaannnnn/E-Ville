@@ -45,7 +45,18 @@ public class HotbarController : MonoBehaviour
             Item item = slot.currentItem.GetComponent<Item>();
             item.UseItem();
 
-            
+            // Reduce quantity if it's a stackable item
+            if (item.quantity > 1)
+            {
+                item.quantity--;
+                item.UpdateQuantityDisplay(); // Update UI text
+            }
+            else
+            {
+                // If only 1 left, remove it from hotbar
+                Destroy(slot.currentItem);
+                slot.currentItem = null;
+            }
         }
 
     }
