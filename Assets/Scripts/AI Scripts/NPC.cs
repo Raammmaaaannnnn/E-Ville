@@ -13,7 +13,14 @@ public class NPC : MonoBehaviour, IInteractable
     private DialogueController dialogueUI;  
     private int dialogueIndex;
     private bool isTyping, isDialogueActive;
-    
+
+    [Header("Patrol Settings")]
+    public Transform patrolParent;
+    public Transform[] patrolPoints;
+    private int currentPatrolIndex = 0;
+    public bool loopPatrolPoints = true;
+    private bool isWaiting;
+
     private enum QuestState { NotStarted, InProgress, Completed}
     private QuestState questState = QuestState.NotStarted;
 
@@ -23,6 +30,13 @@ public class NPC : MonoBehaviour, IInteractable
         if (DialogueController.Instance != null)
         {
             dialogueUI = DialogueController.Instance;
+        }
+
+        patrolPoints = new Transform[patrolParent.childCount];
+
+        for (int i = 0; i < patrolParent.childCount; i++)
+        {
+            patrolPoints[i] = patrolParent.GetChild(i);
         }
     }
 
