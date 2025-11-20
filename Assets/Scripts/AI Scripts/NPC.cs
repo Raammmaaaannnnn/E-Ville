@@ -19,7 +19,13 @@ public class NPC : MonoBehaviour, IInteractable
     public Transform[] patrolPoints;
     private int currentPatrolIndex = 0;
     public bool loopPatrolPoints = true;
-    private bool isWaiting;
+    private bool canPatrol = true;
+
+    [Header("Movement Settings")]
+    public float speed = 2f;
+
+    public SpriteRenderer spriteRenderer;
+    public Animator animator;
 
     private enum QuestState { NotStarted, InProgress, Completed}
     private QuestState questState = QuestState.NotStarted;
@@ -32,15 +38,67 @@ public class NPC : MonoBehaviour, IInteractable
             dialogueUI = DialogueController.Instance;
         }
 
-        patrolPoints = new Transform[patrolParent.childCount];
+        
+    }
 
-        for (int i = 0; i < patrolParent.childCount; i++)
+    private void Start()
+    {
+        // Initialize patrol points from parent if assigned
+        if (patrolParent != null)
         {
-            patrolPoints[i] = patrolParent.GetChild(i);
+            patrolPoints = new Transform[patrolParent.childCount];
+            for (int i = 0; i < patrolParent.childCount; i++)
+            {
+                patrolPoints[i] = patrolParent.GetChild(i);
+            }
         }
     }
 
-   
+    private void Update()
+    {
+        Debug.Log("NPC Update → canPatrol: " + canPatrol  + " | isDialogueActive: " + isDialogueActive);
+        // Stop patrol during dialogue or waiting
+        if (isDialogueActive || !canPatrol)
+        {
+            animator.SetBool("NPCMoving", false);
+            return;
+        }
+
+        // Patrol at all times when free
+        Patrol();
+        
+    }
+
+    ////
+    void Patrol()
+    {
+        if (patrolPoints.Length == 0) return;
+
+        Transform targetPoint = patrolPoints[currentPatrolIndex];
+
+        // Move NPC toward target using Vector3
+        transform.position = Vector3.MoveTowards(
+            transform.position,
+            targetPoint.position,
+            speed * Time.deltaTime
+        );
+
+        // Flip sprite based on direction
+        float dirX = targetPoint.position.x - transform.position.x;
+        if (dirX > 0.01f) spriteRenderer.flipX = false;
+        else if (dirX < -0.01f) spriteRenderer.flipX = true;
+
+        animator.SetBool("NPCMoving", true);
+
+        // Check if reached patrol point
+        if (Vector3.Distance(transform.position, targetPoint.position) < 0.13f)
+        {
+            currentPatrolIndex = loopPatrolPoints
+                ? (currentPatrolIndex + 1) % patrolPoints.Length
+                : Mathf.Min(currentPatrolIndex + 1, patrolPoints.Length - 1);
+        }
+    }
+
 
     public bool canInteract()
     {
@@ -99,10 +157,14 @@ public class NPC : MonoBehaviour, IInteractable
         {
             dialogueIndex = 0;
         }
+
+        canPatrol = false;  // Stop patrolling
+        animator.SetBool("NPCMoving", false);
+
+
         isDialogueActive = true;
         
 
-        
         dialogueUI.SetNPCInfo(dialogueData.npcName, dialogueData.npcPotrait);
         dialogueUI.ShowDialogueUI(true);
         
@@ -248,14 +310,6 @@ public class NPC : MonoBehaviour, IInteractable
         dialogueUI.ClearChoices();
         DisplayCurrentLine();
 
-        //if (givesQuest)
-        //{
-        //    QuestController.Instance.AcceptQuest(dialogueData.quest);
-        //    questState = QuestState.InProgress;
-        //}
-        //dialogueIndex = nextIndex;
-        //dialogueUI.ClearChoices();
-        //DisplayCurrentLine();
     }
 
     void DisplayCurrentLine()
@@ -266,7 +320,7 @@ public class NPC : MonoBehaviour, IInteractable
 
     public void EndDialogue()
     {
-        if(questState == QuestState.Completed && !QuestController.Instance.IsQuestHandedIn(dialogueData.quest.questID) )
+        if (questState == QuestState.Completed && !QuestController.Instance.IsQuestHandedIn(dialogueData.quest.questID))
         {
             //handle quest completion
             HandleQuestCompletion(dialogueData.quest);
@@ -279,7 +333,10 @@ public class NPC : MonoBehaviour, IInteractable
         dialogueUI.ShowDialogueUI(false);
         PauseController.SetPause(false);
 
-       
+
+        canPatrol = true; // Resume patrol after talking
+        
+
     }
 
 
