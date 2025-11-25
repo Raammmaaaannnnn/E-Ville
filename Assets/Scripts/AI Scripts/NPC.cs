@@ -22,7 +22,7 @@ public class NPC : MonoBehaviour, IInteractable
     private bool canPatrol = true;
 
     [Header("Movement Settings")]
-    public float speed = 2f;
+    public float speed = 0.4f;
 
     public SpriteRenderer spriteRenderer;
     public Animator animator;
