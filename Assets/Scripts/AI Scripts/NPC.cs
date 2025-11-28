@@ -267,7 +267,7 @@ public class NPC : MonoBehaviour, IInteractable
             bool spendsCoins = choice.spendsCoins != null && choice.spendsCoins.Length > i && choice.spendsCoins[i];
             int coinCost = choice.coinCost != null && choice.coinCost.Length > i ? choice.coinCost[i] : 0;
 
-            int rewardID = choice.alcoholRewardID != null && choice.alcoholRewardID.Length > i ? choice.alcoholRewardID[i] : 0;
+            int rewardID = choice.RewardID != null && choice.RewardID.Length > i ? choice.RewardID[i] : 0;
 
             //dialogueUI.CreateChoiceButton(choice.choices[i], () => ChooseOption(nextIndex, givesQuest) );
 
@@ -277,7 +277,7 @@ public class NPC : MonoBehaviour, IInteractable
         }
     }
 
-    void ChooseOption(int nextIndex, bool givesQuest /*here*/ , bool spendsCoins = false, int coinCost = 0, int alcoholRewardID = 0)
+    void ChooseOption(int nextIndex, bool givesQuest /*here*/ , bool spendsCoins = false, int coinCost = 0, int RewardID = 0)
     {
 
         if (spendsCoins)
@@ -288,9 +288,9 @@ public class NPC : MonoBehaviour, IInteractable
                 // optional: trigger item/bonus after spending
                 Debug.Log($"Spent {coinCost} coins for choice {nextIndex}");
                 // Give alcohol reward
-                if (alcoholRewardID != 0)
+                if (RewardID != 0)
                 {
-                    RewardsController.Instance.GiveItemReward(alcoholRewardID, 1);
+                    RewardsController.Instance.GiveItemReward(RewardID, 1);
                 }
             }
             else

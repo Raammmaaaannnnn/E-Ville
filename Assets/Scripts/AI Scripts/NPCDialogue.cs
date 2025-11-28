@@ -34,6 +34,6 @@ public class DialogueChoice
     public bool[] givesQuest; // which choice gives quest
     public bool[] spendsCoins; // new field, same size as choices
     public int[] coinCost;     // how many coins each choice costs
-    public int[] alcoholRewardID; // ID of alcohol item given after spending coins
+    public int[] RewardID; // ID of alcohol item given after spending coins
 
 }

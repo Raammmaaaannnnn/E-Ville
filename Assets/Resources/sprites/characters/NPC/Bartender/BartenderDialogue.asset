@@ -43,7 +43,7 @@ MonoBehaviour:
     givesQuest: 0000
     spendsCoins: 0000
     coinCost: 
-    alcoholRewardID: 
+    RewardID: 
   - dialogueIndex: 5
     choices:
     - Here you go boss.
@@ -52,7 +52,7 @@ MonoBehaviour:
     givesQuest: 0000
     spendsCoins: 0100
     coinCost: 0100000000000000
-    alcoholRewardID: 0500000000000000
+    RewardID: 0500000000000000
   questInProgressIndex: 0
   questCompleteIndex: 0
   quest: {fileID: 0}

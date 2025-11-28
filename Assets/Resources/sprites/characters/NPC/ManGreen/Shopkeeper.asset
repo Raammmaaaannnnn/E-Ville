@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 547c79e5d1df38f40bb2b5fad0d76fad, type: 3}
+  m_Name: Shopkeeper
+  m_EditorClassIdentifier: 
+  npcName: Greenie
+  npcPotrait: {fileID: 21300000, guid: 6719f06a2b4b712448c2eefc20cfa9ad, type: 3}
+  dialogueLines:
+  - Helloou..I haven't seen you around.
+  - You look like you need something
+  - What can I do for you?
+  - Did the old man send you?
+  - Oh..I'm pretty low on potions..come back next time
+  - He always does this.. that will be 2 coins
+  - there you go but next time be aware of him
+  - I might have something for you..
+  - Here it is..
+  - Well, thats why you shouldnt trust a guy who lives alone
+  autoProgressLines: 01010101000000010100
+  endDialougeLines: 00000000010001000100
+  autoProgressDelay: 0.9
+  typingSpeed: 0.05
+  voiceSound: {fileID: 8300000, guid: 715b672d5a33fdb40ba114edbcfe6de6, type: 3}
+  voicePitch: 1
+  choices:
+  - dialogueIndex: 2
+    choices:
+    - Medi-Kit
+    - Potions
+    nextDialogueIndexes: 0300000004000000
+    givesQuest: 0000
+    spendsCoins: 0000
+    coinCost: 0000000000000000
+    RewardID: 0000000000000000
+  - dialogueIndex: 3
+    choices:
+    - Yeah he did
+    - No, its for me
+    nextDialogueIndexes: 0500000007000000
+    givesQuest: 0000
+    spendsCoins: 0000
+    coinCost: 0000000000000000
+    RewardID: 0000000001000000
+  - dialogueIndex: 5
+    choices:
+    - I dont have any money
+    - there you go..
+    nextDialogueIndexes: 0900000006000000
+    givesQuest: 0000
+    spendsCoins: 0001
+    coinCost: 0000000002000000
+    RewardID: 0000000002000000
+  questInProgressIndex: 0
+  questCompleteIndex: 0
+  quest: {fileID: 0}
