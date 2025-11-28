@@ -16,7 +16,7 @@ MonoBehaviour:
   questName: Bring Medikit
   description: Bring a supply of medicine box
   objectives:
-  - objectiveID: 1
+  - objectiveID: 2
     description: 'Get the Medkit from the market '
     type: 0
     requiredAmount: 1

@@ -287,17 +287,20 @@ public class NPC : MonoBehaviour, IInteractable
                 CoinUIController.Instance.SpendCoins(coinCost);
                 // optional: trigger item/bonus after spending
                 Debug.Log($"Spent {coinCost} coins for choice {nextIndex}");
-                // Give alcohol reward
-                if (RewardID != 0)
-                {
-                    RewardsController.Instance.GiveItemReward(RewardID, 1);
-                }
+                
             }
             else
             {
                 Debug.Log("Not enough coins!");
                 return; // prevent progressing to next line if insufficient coins
             }
+           
+        }
+        // Give reward
+        if (RewardID != 0)
+        {
+            Debug.Log($"Giving reward item: ID={RewardID}");
+            RewardsController.Instance.GiveItemReward(RewardID, 1);
         }
 
         if (givesQuest)

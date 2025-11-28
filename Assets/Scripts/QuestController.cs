@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using static Pathfinding.RaycastModifier;
@@ -16,8 +16,12 @@ public class QuestController : MonoBehaviour
         else Destroy(gameObject);
 
         questUI = FindObjectOfType<QuestUI>();
-        InventoryController.Instance.OnInventoryChanged += CheckInventoryForQuests;
+    }
 
+    private void Start()
+    {
+        // Important → subscribe AFTER InventoryController is initialized.
+        InventoryController.Instance.OnInventoryChanged += CheckInventoryForQuests;
     }
 
     public void  AcceptQuest(Quest quest)
@@ -144,5 +148,11 @@ public class QuestController : MonoBehaviour
 
         CheckInventoryForQuests();
         questUI.UpdateQuestUI();
+    }
+
+    private void OnDestroy()
+    {
+        if (InventoryController.Instance != null)
+            InventoryController.Instance.OnInventoryChanged -= CheckInventoryForQuests;
     }
 }
