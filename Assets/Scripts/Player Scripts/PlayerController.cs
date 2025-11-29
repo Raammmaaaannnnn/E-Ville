@@ -124,9 +124,14 @@ public class PlayerController : MonoBehaviour
 
             // Deal damage and knockback to enemy
             Enemy enemyScript = detectedEnemyCollider.GetComponent<Enemy>();
+            NPC npcScript = detectedEnemyCollider.GetComponent<NPC>();
             if (enemyScript != null)
             {
                 enemyScript.TakeDamage(attackDamage);//, gameObject);
+            }
+            if (npcScript != null)
+            {
+                npcScript.TakeDamage(attackDamage, transform.position);
             }
         }
     }

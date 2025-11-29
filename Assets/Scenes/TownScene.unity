@@ -17444,6 +17444,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dialogueData: {fileID: 11400000, guid: 4b5c03be01e024142bdee638917ecca2, type: 2}
+  isAttackable: 0
   patrolParent: {fileID: 1196160815}
   patrolPoints:
   - {fileID: 1684498504}
@@ -17454,6 +17455,8 @@ MonoBehaviour:
   speed: 0.4
   spriteRenderer: {fileID: 912479377}
   animator: {fileID: 912479376}
+  fleeSpeed: 2
+  fleeDistance: 5
 --- !u!70 &785264992
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -75089,6 +75092,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dialogueData: {fileID: 11400000, guid: 360c2349768b83148b2fdf4dc12236d7, type: 2}
+  isAttackable: 0
   patrolParent: {fileID: 1232084739}
   patrolPoints:
   - {fileID: 465671888}
@@ -75098,6 +75102,8 @@ MonoBehaviour:
   speed: 0.4
   spriteRenderer: {fileID: 1842577273}
   animator: {fileID: 1842577272}
+  fleeSpeed: 2
+  fleeDistance: 5
 --- !u!70 &1446779518
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -76872,6 +76878,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dialogueData: {fileID: 11400000, guid: f9b9758270bcda04093469d3dbe88571, type: 2}
+  isAttackable: 0
   patrolParent: {fileID: 694191385}
   patrolPoints:
   - {fileID: 1575395883}
@@ -76881,6 +76888,8 @@ MonoBehaviour:
   speed: 0.4
   spriteRenderer: {fileID: 390281205}
   animator: {fileID: 390281204}
+  fleeSpeed: 2
+  fleeDistance: 5
 --- !u!1 &1761397024
 GameObject:
   m_ObjectHideFlags: 0

@@ -14,6 +14,8 @@ public class NPC : MonoBehaviour, IInteractable
     private int dialogueIndex;
     private bool isTyping, isDialogueActive;
 
+    public bool isAttackable = false; // runtime flag
+
     [Header("Patrol Settings")]
     public Transform patrolParent;
     public Transform[] patrolPoints;
@@ -27,6 +29,12 @@ public class NPC : MonoBehaviour, IInteractable
     public SpriteRenderer spriteRenderer;
     public Animator animator;
 
+    [Header("Flee Settings")]
+    public float fleeSpeed = 0.6f;
+    public float fleeDistance = 5f;
+    private bool isFleeing = false;
+    private Vector3 fleeDirection;
+
     private enum QuestState { NotStarted, InProgress, Completed}
     private QuestState questState = QuestState.NotStarted;
 
@@ -38,7 +46,7 @@ public class NPC : MonoBehaviour, IInteractable
             dialogueUI = DialogueController.Instance;
         }
 
-        
+
     }
 
     private void Start()
@@ -54,8 +62,18 @@ public class NPC : MonoBehaviour, IInteractable
         }
     }
 
+    public void UpdateAttackableStatus()
+    {
+        PlayerIntoxication playerIntox = FindObjectOfType<PlayerIntoxication>();
+        if (playerIntox != null)
+        {
+            isAttackable = playerIntox.currentLevel >= PlayerIntoxication.IntoxicationLevel.Orange;
+        }
+    }
+
     private void Update()
     {
+        UpdateAttackableStatus(); // constantly check player's state
         Debug.Log("NPC Update → canPatrol: " + canPatrol  + " | isDialogueActive: " + isDialogueActive);
         // Stop patrol during dialogue or waiting
         if (isDialogueActive || !canPatrol)
@@ -64,9 +82,60 @@ public class NPC : MonoBehaviour, IInteractable
             return;
         }
 
+        if (isFleeing)
+        {
+            FleeFromPlayer();
+            return;
+        }
+
+
         // Patrol at all times when free
         Patrol();
         
+    }
+
+    //
+
+    public void TakeDamage(int damage, Vector3 playerPosition)
+    {
+        if (!isAttackable) return;
+
+        // Trigger fleeing
+        isFleeing = true;
+        fleeDirection = (transform.position - playerPosition).normalized;
+
+        // Stop patrol
+        canPatrol = false;
+        animator.SetBool("NPCMoving", true);
+
+        Debug.Log($"{name} is fleeing!");
+    }
+
+    void FleeFromPlayer()
+    {
+        if (!isFleeing) return;
+
+        Vector3 newPos = transform.position + fleeDirection * fleeSpeed * Time.deltaTime;
+
+        // Check collisions with obstacles
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, fleeDirection, fleeSpeed * Time.deltaTime);
+        if (hit.collider != null && hit.collider.gameObject.CompareTag("Obstacle"))
+        {
+            // Reflect direction randomly to avoid obstacle
+            fleeDirection = Vector3.Reflect(fleeDirection, hit.normal).normalized;
+        }
+
+        transform.position += fleeDirection * fleeSpeed * Time.deltaTime;
+
+        // Flip sprite
+        spriteRenderer.flipX = fleeDirection.x < 0;
+
+        // Optional: stop fleeing after distance
+        if (Vector3.Distance(transform.position, fleeDirection + transform.position) > fleeDistance)
+        {
+            isFleeing = false;
+            canPatrol = true;
+        }
     }
 
     ////
