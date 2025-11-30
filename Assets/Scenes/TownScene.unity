@@ -11109,7 +11109,7 @@ GameObject:
   - component: {fileID: 390281203}
   - component: {fileID: 390281205}
   - component: {fileID: 390281204}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: oldman
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11766,15 +11766,15 @@ Camera:
   m_FocalLength: 50
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: 0
-    y: 0.0024813896
-    width: 1
-    height: 0.9925558
+    x: 0.0011389522
+    y: 0.0020242915
+    width: 0.99772215
+    height: 0.9959514
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 1
+  orthographic size: 1.23
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -17408,7 +17408,7 @@ GameObject:
   - component: {fileID: 785264990}
   - component: {fileID: 785264992}
   - component: {fileID: 785264991}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: NPC Kid
   m_TagString: NPC
   m_Icon: {fileID: 0}
@@ -17444,7 +17444,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dialogueData: {fileID: 11400000, guid: 4b5c03be01e024142bdee638917ecca2, type: 2}
+  health: 70
   isAttackable: 0
+  obstacleLayer:
+    serializedVersion: 2
+    m_Bits: 128
   patrolParent: {fileID: 1196160815}
   patrolPoints:
   - {fileID: 1684498504}
@@ -17452,11 +17456,12 @@ MonoBehaviour:
   - {fileID: 490961439}
   - {fileID: 495034347}
   loopPatrolPoints: 1
-  speed: 0.4
+  speed: 0.8
+  fleeSpeed: 1
+  fleeDuration: 3
+  idleDuration: 0.3
   spriteRenderer: {fileID: 912479377}
   animator: {fileID: 912479376}
-  fleeSpeed: 2
-  fleeDistance: 5
 --- !u!70 &785264992
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -18917,7 +18922,7 @@ GameObject:
   - component: {fileID: 912479375}
   - component: {fileID: 912479377}
   - component: {fileID: 912479376}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Kid
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -75056,9 +75061,9 @@ GameObject:
   - component: {fileID: 1446779516}
   - component: {fileID: 1446779517}
   - component: {fileID: 1446779518}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: ShopKeeper
-  m_TagString: Untagged
+  m_TagString: NPC
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -75092,18 +75097,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dialogueData: {fileID: 11400000, guid: 360c2349768b83148b2fdf4dc12236d7, type: 2}
+  health: 50
   isAttackable: 0
+  obstacleLayer:
+    serializedVersion: 2
+    m_Bits: 0
   patrolParent: {fileID: 1232084739}
   patrolPoints:
   - {fileID: 465671888}
   - {fileID: 520260521}
   - {fileID: 318233619}
   loopPatrolPoints: 1
-  speed: 0.4
+  speed: 1
+  fleeSpeed: 1.3
+  fleeDuration: 3
+  idleDuration: 0.2
   spriteRenderer: {fileID: 1842577273}
   animator: {fileID: 1842577272}
-  fleeSpeed: 2
-  fleeDistance: 5
 --- !u!70 &1446779518
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -76826,9 +76836,9 @@ GameObject:
   - component: {fileID: 1757469309}
   - component: {fileID: 1757469311}
   - component: {fileID: 1757469310}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: OldMan
-  m_TagString: Untagged
+  m_TagString: NPC
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -76878,18 +76888,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dialogueData: {fileID: 11400000, guid: f9b9758270bcda04093469d3dbe88571, type: 2}
+  health: 20
   isAttackable: 0
+  obstacleLayer:
+    serializedVersion: 2
+    m_Bits: 128
   patrolParent: {fileID: 694191385}
   patrolPoints:
   - {fileID: 1575395883}
   - {fileID: 2073391823}
   - {fileID: 1069097270}
   loopPatrolPoints: 1
-  speed: 0.4
+  speed: 0.6
+  fleeSpeed: 0.7
+  fleeDuration: 3
+  idleDuration: 0.2
   spriteRenderer: {fileID: 390281205}
   animator: {fileID: 390281204}
-  fleeSpeed: 2
-  fleeDistance: 5
 --- !u!1 &1761397024
 GameObject:
   m_ObjectHideFlags: 0
@@ -77143,7 +77158,7 @@ GameObject:
   - component: {fileID: 1842577271}
   - component: {fileID: 1842577273}
   - component: {fileID: 1842577272}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Greenie
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -78006,7 +78021,7 @@ MonoBehaviour:
   attackRange: 0.25
   attackLayer:
     serializedVersion: 2
-    m_Bits: 256
+    m_Bits: 320
   attackDamage: 10
   attackKnockbackForce: 6
   enemyBlinkDuration: 0.8

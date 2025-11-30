@@ -1198,7 +1198,7 @@ GameObject:
   m_Component:
   - component: {fileID: 476529036}
   - component: {fileID: 476529038}
-  - component: {fileID: 476529037}
+  - component: {fileID: 476529039}
   m_Layer: 0
   m_Name: Bartender
   m_TagString: Untagged
@@ -1221,27 +1221,6 @@ Transform:
   m_Father: {fileID: 1504856662}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!95 &476529037
-Animator:
-  serializedVersion: 5
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 476529035}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: f1f8e001d04dc06418ced2bb3a78a708, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!212 &476529038
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1294,6 +1273,27 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!95 &476529039
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 476529035}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 37b169a2c17f894489c44fd32764a1c9, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &647556170
 GameObject:
   m_ObjectHideFlags: 0
@@ -33686,7 +33686,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dialogueData: {fileID: 11400000, guid: 8f23ca43e3082ec4192e3b45dfe8b438, type: 2}
+  health: 50
   isAttackable: 0
+  obstacleLayer:
+    serializedVersion: 2
+    m_Bits: 128
   patrolParent: {fileID: 1388151899}
   patrolPoints:
   - {fileID: 331800440}
@@ -33696,10 +33700,11 @@ MonoBehaviour:
   - {fileID: 647556171}
   loopPatrolPoints: 1
   speed: 0.4
-  spriteRenderer: {fileID: 476529038}
-  animator: {fileID: 476529037}
   fleeSpeed: 0.6
-  fleeDistance: 5
+  fleeDuration: 3
+  idleDuration: 0.3
+  spriteRenderer: {fileID: 476529038}
+  animator: {fileID: 476529039}
 --- !u!70 &1504856664
 CapsuleCollider2D:
   m_ObjectHideFlags: 0

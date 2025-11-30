@@ -36,7 +36,13 @@ public class PlayerController : MonoBehaviour
     private bool EnemyInAttackRange = false;
     private Collider2D detectedEnemyCollider = null; // last hit collider (if any)
 
-    
+    // Add runtime flag for NPC detection
+    private bool NPCInAttackRange = false;
+    private Collider2D detectedNPCCollider = null;
+
+    // runtime
+    private PlayerIntoxication playerIntox;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -46,7 +52,14 @@ public class PlayerController : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
 
         currentHealth = maxHealth;
-        
+
+        // cache player intoxication (optional null fallback)
+        playerIntox = FindObjectOfType<PlayerIntoxication>();
+        if (playerIntox == null)
+        {
+            Debug.LogWarning("PlayerIntoxication not found in scene. NPC attack detection will default to always-off for NPCs until PlayerIntoxication exists.");
+        }
+
     }
 
     // Update is called once per frame
@@ -63,6 +76,7 @@ public class PlayerController : MonoBehaviour
         AdjustPlayerFacingDirection();
         // perform short-range linecast every frame 
         DetectEnemyForAttack();
+        
         rb.velocity = moveInput * moveSpeed;
 
         animator.SetBool("isMoving?", rb.velocity.magnitude > 0);
@@ -124,14 +138,21 @@ public class PlayerController : MonoBehaviour
 
             // Deal damage and knockback to enemy
             Enemy enemyScript = detectedEnemyCollider.GetComponent<Enemy>();
-            NPC npcScript = detectedEnemyCollider.GetComponent<NPC>();
+            
             if (enemyScript != null)
             {
                 enemyScript.TakeDamage(attackDamage);//, gameObject);
             }
-            if (npcScript != null)
+           
+        }
+        // ------------------- NPC attack -------------------
+        if (NPCInAttackRange && detectedNPCCollider != null)
+        {
+            NPC npcScript = detectedNPCCollider.GetComponent<NPC>();
+            if (npcScript != null && npcScript.isAttackable)
             {
-                npcScript.TakeDamage(attackDamage, transform.position);
+                animator.SetTrigger("Attack");
+                npcScript.TakeDamage(attackDamage);
             }
         }
     }
@@ -201,6 +222,8 @@ public class PlayerController : MonoBehaviour
         detectedEnemyCollider = null;
         EnemyInAttackRange = false;
 
+        detectedNPCCollider = null; 
+        NPCInAttackRange = false;   
         // get mouse world position and direction from player to mouse
         Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         Vector3 dir = (mouseWorld - transform.position);
@@ -214,27 +237,62 @@ public class PlayerController : MonoBehaviour
         Vector2 endPos = startPos + dirNormalized * attackRange;
 
         // Linecast against the enemyLayer
-        RaycastHit2D hit = Physics2D.Linecast(startPos, endPos, attackLayer);
+        RaycastHit2D[] hits = Physics2D.RaycastAll(startPos, dirNormalized, attackRange, attackLayer);
 
-        if (hit.collider != null)
+        foreach (RaycastHit2D hit in hits)
         {
-            // If you also want to ensure a specific tag:
-            if (string.IsNullOrEmpty(enemyTag) || hit.collider.CompareTag(enemyTag))
+            if (hit.collider == null) continue;
+
+            // Enemy detection
+            if (hit.collider.CompareTag(enemyTag))
             {
                 EnemyInAttackRange = true;
                 detectedEnemyCollider = hit.collider;
-                Debug.Log("Enemy detected for attack: " + hit.collider.name);
             }
-            else
+
+            // NPC detection
+            NPC npcScript = hit.collider.GetComponent<NPC>();
+            if (npcScript != null)
             {
-                EnemyInAttackRange = false;
+                // Set NPC attackable ONLY if player intox >= Orange
+                if (playerIntox != null && playerIntox.currentLevel >= PlayerIntoxication.IntoxicationLevel.Orange)
+                {
+                    npcScript.isAttackable = true;
+                }
+                else
+                {
+                    npcScript.isAttackable = false;
+                }
+
+                // Update runtime detection
+                NPCInAttackRange = true;
+                detectedNPCCollider = hit.collider;
             }
         }
-        else
-        {
-            EnemyInAttackRange = false;
-        }
+        //RaycastHit2D hit = Physics2D.Linecast(startPos, endPos, attackLayer);
+
+        //if (hit.collider != null)
+        //{
+        //    // If you also want to ensure a specific tag:
+        //    if (string.IsNullOrEmpty(enemyTag) || hit.collider.CompareTag(enemyTag))
+        //    {
+        //        EnemyInAttackRange = true;
+        //        detectedEnemyCollider = hit.collider;
+        //        Debug.Log("Enemy detected for attack: " + hit.collider.name);
+        //    }
+        //    else
+        //    {
+        //        EnemyInAttackRange = false;
+        //    }
+        //}
+        //else
+        //{
+        //    EnemyInAttackRange = false;
+        //}
+
     }
+
+
 
     // Draw gizmos to visualize the attack check in the Scene view
     private void OnDrawGizmosSelected()
@@ -257,9 +315,6 @@ public class PlayerController : MonoBehaviour
         Vector2 dirNormalized = dir.normalized;
         Vector3 endPos = transform.position + (Vector3)(dirNormalized * attackRange);
 
-        // color indicates if enemy is in range
-        Gizmos.color = EnemyInAttackRange ? Color.yellow : Color.gray;
-        Gizmos.DrawLine(transform.position, endPos);
 
         // draw small sphere at the end of the check
         Gizmos.DrawSphere(endPos, 0.05f);
@@ -267,11 +322,30 @@ public class PlayerController : MonoBehaviour
         // if we hit an enemy, highlight it
         if (detectedEnemyCollider != null)
         {
+            // color indicates if enemy is in range
+            Gizmos.color = EnemyInAttackRange ? Color.yellow : Color.gray;
+            Gizmos.DrawLine(transform.position, endPos);
+
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(detectedEnemyCollider.transform.position, 0.3f);
         }
-    }
 
+        // NPC: cyan
+        if (NPCInAttackRange)
+        {
+            Gizmos.color = NPCInAttackRange ? Color.magenta : Color.gray;
+            Gizmos.DrawLine(transform.position, endPos);
+
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(detectedNPCCollider.transform.position, 0.2f);
+        }
+
+        //// Small sphere at the end of the check
+        //Gizmos.color = Color.white;
+        //Gizmos.DrawSphere(endPos, 0.05f);
+
+
+    }
 
 
 }

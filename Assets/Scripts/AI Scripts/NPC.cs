@@ -14,7 +14,16 @@ public class NPC : MonoBehaviour, IInteractable
     private int dialogueIndex;
     private bool isTyping, isDialogueActive;
 
+    [Header("Health")]
+    public int health = 50;
+   
+    [Header("Flee Settings")]
+    private float fleeTimer = 0f;
+    private float idleTimer = 0f;
+
+    [Header("Detection")]
     public bool isAttackable = false; // runtime flag
+    public LayerMask obstacleLayer;
 
     [Header("Patrol Settings")]
     public Transform patrolParent;
@@ -25,15 +34,18 @@ public class NPC : MonoBehaviour, IInteractable
 
     [Header("Movement Settings")]
     public float speed = 0.4f;
+    public float fleeSpeed = 1f; 
+    public float fleeDuration = 3f; 
+    public float idleDuration = 0.3f;
+    private bool isFleeing = false;
+    private bool isIdle = false;
 
+    private Vector3 fleeDirection;
+    private Vector3 lastPatrolPosition;
     public SpriteRenderer spriteRenderer;
     public Animator animator;
-
-    [Header("Flee Settings")]
-    public float fleeSpeed = 0.6f;
-    public float fleeDistance = 5f;
-    private bool isFleeing = false;
-    private Vector3 fleeDirection;
+    private Transform playerTransform;
+    
 
     private enum QuestState { NotStarted, InProgress, Completed}
     private QuestState questState = QuestState.NotStarted;
@@ -62,18 +74,10 @@ public class NPC : MonoBehaviour, IInteractable
         }
     }
 
-    public void UpdateAttackableStatus()
-    {
-        PlayerIntoxication playerIntox = FindObjectOfType<PlayerIntoxication>();
-        if (playerIntox != null)
-        {
-            isAttackable = playerIntox.currentLevel >= PlayerIntoxication.IntoxicationLevel.Orange;
-        }
-    }
 
     private void Update()
     {
-        UpdateAttackableStatus(); // constantly check player's state
+       
         Debug.Log("NPC Update → canPatrol: " + canPatrol  + " | isDialogueActive: " + isDialogueActive);
         // Stop patrol during dialogue or waiting
         if (isDialogueActive || !canPatrol)
@@ -82,61 +86,145 @@ public class NPC : MonoBehaviour, IInteractable
             return;
         }
 
+
         if (isFleeing)
         {
-            FleeFromPlayer();
-            return;
+            FleeUpdate();
+        }
+        else if (isIdle)
+        {
+            IdleUpdate();
+        }
+        else
+        {
+            Patrol();
         }
 
+        //// Patrol at all times when free
+        //Patrol();
 
-        // Patrol at all times when free
-        Patrol();
-        
     }
 
     //
-
-    public void TakeDamage(int damage, Vector3 playerPosition)
+    void FleeUpdate()
     {
-        if (!isAttackable) return;
+        fleeTimer += Time.deltaTime;
 
-        // Trigger fleeing
-        isFleeing = true;
-        fleeDirection = (transform.position - playerPosition).normalized;
-
-        // Stop patrol
-        canPatrol = false;
-        animator.SetBool("NPCMoving", true);
-
-        Debug.Log($"{name} is fleeing!");
-    }
-
-    void FleeFromPlayer()
-    {
-        if (!isFleeing) return;
-
-        Vector3 newPos = transform.position + fleeDirection * fleeSpeed * Time.deltaTime;
-
-        // Check collisions with obstacles
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, fleeDirection, fleeSpeed * Time.deltaTime);
-        if (hit.collider != null && hit.collider.gameObject.CompareTag("Obstacle"))
+        // Check collisions
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, fleeDirection, 0.5f, obstacleLayer);
+        if (hit.collider != null)
         {
-            // Reflect direction randomly to avoid obstacle
-            fleeDirection = Vector3.Reflect(fleeDirection, hit.normal).normalized;
+            // Change flee direction randomly if obstacle detected
+            float angle = Random.Range(-90f, 90f);
+            fleeDirection = Quaternion.Euler(0, 0, angle) * fleeDirection;
         }
 
+        // Move NPC
         transform.position += fleeDirection * fleeSpeed * Time.deltaTime;
 
         // Flip sprite
-        spriteRenderer.flipX = fleeDirection.x < 0;
+        if (fleeDirection.x > 0.01f) spriteRenderer.flipX = false;
+        else if (fleeDirection.x < -0.01f) spriteRenderer.flipX = true;
 
-        // Optional: stop fleeing after distance
-        if (Vector3.Distance(transform.position, fleeDirection + transform.position) > fleeDistance)
+        if (fleeTimer >= fleeDuration)
         {
-            isFleeing = false;
-            canPatrol = true;
+            StopFleeing();
         }
     }
+
+    void IdleUpdate()
+    {
+        idleTimer += Time.deltaTime;
+
+        if (idleTimer >= idleDuration)
+        {
+            isIdle = false;
+
+            // Check if player is near to continue fleeing
+            if (playerTransform != null && Vector3.Distance(transform.position, playerTransform.position) < 3f)
+            {
+                StartFleeing();
+            }
+            else
+            {
+                // Return to last patrol point
+                if (patrolPoints.Length > 0)
+                {
+                    currentPatrolIndex = FindClosestPatrolPointIndex();
+                }
+            }
+        }
+    }
+
+
+    public void TakeDamage(int damage)
+    {
+        
+        health -= damage;
+        Debug.Log($"{name} took {damage} damage, health now {health}");
+        if (health <= 0)
+        {
+            Debug.Log($"{name} died");
+            Destroy(gameObject);
+            return;
+        }
+
+        // Trigger fleeing
+        if (!isFleeing)
+        {
+            Debug.Log($"{name} fleeing");
+            StartFleeing();
+        }
+
+    }
+
+    void StartFleeing()
+    {
+        isFleeing = true;
+        isIdle = false;
+        fleeTimer = 0f;
+        lastPatrolPosition = transform.position;
+
+        // Find player transform
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            playerTransform = player.transform;
+            fleeDirection = (transform.position - playerTransform.position).normalized;
+        }
+        else
+        {
+            fleeDirection = Vector3.back; // default fallback
+        }
+
+        animator.SetBool("NPCMoving", true);
+    }
+
+    void StopFleeing()
+    {
+        isFleeing = false;
+        isIdle = true;
+        idleTimer = 0f;
+        animator.SetBool("NPCMoving", false);
+    }
+
+
+    int FindClosestPatrolPointIndex()
+    {
+        int closestIndex = 0;
+        float minDist = Vector3.Distance(transform.position, patrolPoints[0].position);
+        for (int i = 1; i < patrolPoints.Length; i++)
+        {
+            float dist = Vector3.Distance(transform.position, patrolPoints[i].position);
+            if (dist < minDist)
+            {
+                minDist = dist;
+                closestIndex = i;
+            }
+        }
+        return closestIndex;
+    }
+
 
     ////
     void Patrol()
