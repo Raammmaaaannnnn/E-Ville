@@ -185,13 +185,6 @@ public class PlayerController : MonoBehaviour
     {
         if (!context.performed) return; // only trigger once per press
 
-
-        // Prevent attack if player is not intoxicated
-        if (playerIntox == null || playerIntox.currentLevel < PlayerIntoxication.IntoxicationLevel.Orange)
-        {
-            Debug.Log("Cannot attack: Player is not intoxicated enough!");
-            return;
-        }
         // -----------------------------------
         // 1. Destructible Object Attack
         // -----------------------------------
@@ -207,6 +200,14 @@ public class PlayerController : MonoBehaviour
                 return; // stop here so we don't double-hit enemies
             }
         }
+
+        // Prevent attack if player is not intoxicated
+        if (playerIntox == null || playerIntox.currentLevel < PlayerIntoxication.IntoxicationLevel.Orange)
+        {
+            Debug.Log("Cannot attack: Player is not intoxicated enough!");
+            return;
+        }
+       
 
         if (EnemyInAttackRange && detectedEnemyCollider != null)
         {
@@ -488,6 +489,7 @@ public class PlayerController : MonoBehaviour
 
         // 3. Remove Drunk Effect
         DrunkEffectController.Instance?.ResetEffects();
+        IntoxicationUIController.Instance.UpdateIntoxicationUI(playerIntox.currentLevel, 0f); 
 
         // Stop attacker spawning immediately
         HouseSpawnManager.Instance?.StopChaosMode();
