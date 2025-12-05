@@ -1,8 +1,7 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Pathfinding;
- 
 
 public class Enemy : MonoBehaviour
 {
@@ -11,10 +10,20 @@ public class Enemy : MonoBehaviour
     public SpriteRenderer spriteRenderer;
     public Rigidbody2D rb;
     public Animator animator;
+    private bool isDead = false;
 
     [Header("Detection Settings")]
     public float detectionDistance = 1f; // linecast range
     public LayerMask playerLayer;
+
+    [Header("Provocation Settings")]
+    public float provokeTime = 2f;
+    public float provokeChaseColorTime = 5f;
+    public GameObject provokeIcon;
+    private bool forceChaseFromProvoke = false;
+
+    private bool provokeTimerRunning = false;
+    private float provokeTimer = 0f;
 
     private List<RaycastHit2D> resultsList = new List<RaycastHit2D>();
     private ContactFilter2D contactFilter;
@@ -37,11 +46,9 @@ public class Enemy : MonoBehaviour
 
     [Header("Attack Settings")]
     public float attackDistance = 0.2f;
-    //public float attackCooldown = 0.9f;
     public int attackDamage = 10;
     private bool playerInAttackRange = false;
     private bool isAttacking = false;
-    //private float attackTimer = 0f;
     private bool inAttackStance = false;
 
     // Pathfinding
@@ -59,122 +66,113 @@ public class Enemy : MonoBehaviour
     [Header("Enemy Combat")]
     private KnockBack knockback;
     public int health = 50;
-    
 
+    // Stars
+    private bool playerHasStars = false;
+    private static bool globalAlert = false;
 
     private void Start()
     {
         patrolPoints = new Transform[patrolParent.childCount];
-
         for (int i = 0; i < patrolParent.childCount; i++)
-        {
             patrolPoints[i] = patrolParent.GetChild(i);
-        }
-        ////
-        ///
 
-        // Set up contact filter to only detect the player layer and optionally triggers
         contactFilter = new ContactFilter2D();
         contactFilter.SetLayerMask(playerLayer);
-        contactFilter.useTriggers = false; // set to true if player collider is a trigger
+        contactFilter.useTriggers = false;
 
-        ///
-        ///
-        // Set up the contact filter for attack detection
         attackFilter = new ContactFilter2D();
-        attackFilter.SetLayerMask(playerLayer); // whatever layer(s) the player is on
-        attackFilter.useTriggers = false;        // detect trigger colliders if needed
+        attackFilter.SetLayerMask(playerLayer);
+        attackFilter.useTriggers = false;
 
-        /////
         knockback = GetComponent<KnockBack>();
         seeker = GetComponent<Seeker>();
-        InvokeRepeating("UpdatePath", 0f, 0.5f); // recalc path every 0.5s
+        InvokeRepeating("UpdatePath", 0f, 0.5f);
+
+        // Subscribe to stars
+        if (IntoxicationStarsManager.Instance != null)
+            IntoxicationStarsManager.Instance.OnStarsChanged += OnStarsChanged;
     }
+
+    private void OnDisable()
+    {
+        if (IntoxicationStarsManager.Instance != null)
+            IntoxicationStarsManager.Instance.OnStarsChanged -= OnStarsChanged;
+    }
+
+    private void OnStarsChanged(int stars)
+    {
+        playerHasStars = stars > 0;
+
+        if (stars >= 2) globalAlert = true;
+        else globalAlert = false;
+    }
+
     private void Update()
     {
         DetectPlayer();
         DetectPlayerForAttack();
 
-        // Update animator parameter
         animator.SetBool("InAttackRange", playerInAttackRange);
 
         HandleAttack();
+        HandleProvokeTimer();
 
-        
-
-        if (isWaiting)
-        {
-            return;
-        }
+        if (isWaiting) return;
         if (isIdleChecking || isAttacking) return;
-
 
         if (!inAttackStance)
         {
-            if (playerDetected)
+            if (playerHasStars || globalAlert || forceChaseFromProvoke)
             {
-                if (!isChasing)
+                if (playerDetected || globalAlert || forceChaseFromProvoke)
                 {
-                    isChasing = true;
-                    chaseTimer = 0f;
-                }
-                ChasePlayer();
-                chaseTimer += Time.deltaTime;
-
-                if (chaseTimer >= chaseDuration)
-                    StartCoroutine(IdleCheckCoroutine());
-
-
-            }
-            else
-            {
-                if (!isChasing)
-                {
-                    Patrol();
-                }
-                else
-                {
+                    if (!isChasing)
+                    {
+                        isChasing = true;
+                        chaseTimer = 0f;
+                    }
                     ChasePlayer();
                     chaseTimer += Time.deltaTime;
+
                     if (chaseTimer >= chaseDuration)
-                    {
                         StartCoroutine(IdleCheckCoroutine());
-                    }
                 }
+                else Patrol();
             }
+            else Patrol();
         }
-            
-        
     }
 
+    #region Detection
     void DetectPlayer()
     {
+        if (target == null)
+        {
+            playerDetected = false;
+            return;
+        }
 
-        Vector2 direction = (target.position - transform.position).normalized;
-        float distance = detectionDistance;
+        if (!playerHasStars && !globalAlert && !forceChaseFromProvoke)
+        {
+            playerDetected = false;
+            return;
+        }
 
-        resultsList.Clear(); // clear previous hits
-
-        int count = Physics2D.Raycast(transform.position, direction, contactFilter, resultsList, distance);
+        Vector2 dir = (target.position - transform.position).normalized;
+        resultsList.Clear();
+        int count = Physics2D.Raycast(transform.position, dir, contactFilter, resultsList, detectionDistance);
 
         playerDetected = false;
-
         for (int i = 0; i < count; i++)
         {
             if (resultsList[i].collider.CompareTag("Player"))
             {
                 playerDetected = true;
-                Debug.Log("Player Detected via Raycast!");
                 break;
             }
         }
-
-        if (!playerDetected)
-            Debug.Log("Player NOT Detected via Raycast.");
-        
-
     }
-
 
     void DetectPlayerForAttack()
     {
@@ -184,142 +182,144 @@ public class Enemy : MonoBehaviour
             return;
         }
 
-        Vector2 directionToPlayer = (target.position - transform.position).normalized;
+        Vector2 dir = (target.position - transform.position).normalized;
+        attackResults.Clear();
 
-        attackResults.Clear(); // clear previous results
-
-        // Perform raycast with multiple hits
-        int hitCount = Physics2D.Raycast(
-            transform.position,
-            directionToPlayer,
-            attackFilter,
-            attackResults,
-            attackDistance
-        );
+        int count = Physics2D.Raycast(transform.position, dir, attackFilter, attackResults, attackDistance);
 
         playerInAttackRange = false;
-
-        for (int i = 0; i < hitCount; i++)
+        for (int i = 0; i < count; i++)
         {
             if (attackResults[i].collider.CompareTag("Player"))
             {
                 playerInAttackRange = true;
-                Debug.Log("Player within attack range");
-                break; // no need to check other hits
+
+                // Provoke only if no stars
+                if (!playerHasStars && !provokeTimerRunning)
+                {
+                    provokeTimerRunning = true;
+                    provokeTimer = 0f;
+                }
+                break;
             }
         }
 
         if (!playerInAttackRange)
-            Debug.Log("Player NOT in attack range");
-        
+        {
+            provokeTimerRunning = false;
+            provokeTimer = 0f;
+        }
+    }
+    #endregion
+
+    #region Provoke
+    void HandleProvokeTimer()
+    {
+        if (!provokeTimerRunning) return;
+
+        provokeTimer += Time.deltaTime;
+
+        if (provokeTimer >= provokeTime)
+        {
+            StartCoroutine(TriggerProvoke());
+            provokeTimerRunning = false;
+            provokeTimer = 0f;
+        }
     }
 
-    /// <summary>
-    /// Attack
-    /// </summary>
+    IEnumerator TriggerProvoke()
+    {
+        forceChaseFromProvoke = true;
 
+        if (provokeIcon != null) provokeIcon.SetActive(true);
+        SoundEffectManager.Play("Provoke", true);
 
+        if (IntoxicationStarsManager.Instance != null)
+            IntoxicationStarsManager.Instance.AddStars(1);
+
+        spriteRenderer.color = Color.red;
+
+        float t = 0f;
+        while (t < provokeChaseColorTime)
+        {
+            t += Time.deltaTime;
+            yield return null;
+        }
+
+        spriteRenderer.color = Color.white;
+        if (provokeIcon != null) provokeIcon.SetActive(false);
+
+        forceChaseFromProvoke = false;
+    }
+    #endregion
+
+    #region Attack
     void HandleAttack()
     {
-        // If player is not in range, cancel stance
-        if (!playerInAttackRange)
+        if (!playerInAttackRange || (!playerHasStars && !forceChaseFromProvoke))
         {
             inAttackStance = false;
-            
             return;
         }
 
-        // Stop moving completely while in range
         inAttackStance = true;
         rb.velocity = Vector2.zero;
-        
 
-        // Face player direction
-        Vector2 dirToPlayer = (target.position - transform.position).normalized;
-        spriteRenderer.flipX = dirToPlayer.x < 0;
+        Vector2 dir = (target.position - transform.position).normalized;
+        spriteRenderer.flipX = dir.x < 0;
 
-        // If ready and not already attacking
         if (!isAttacking)
-        {
             StartCoroutine(AttackCoroutine());
-        }
     }
 
     IEnumerator AttackCoroutine()
     {
         isAttacking = true;
-
-        // Stop movement
         rb.velocity = Vector2.zero;
 
-        // Play wind-up / attack stance
         animator.SetTrigger("AttackStance");
-
-        // Wait for the wind-up animation duration
         yield return new WaitForSeconds(0.7f);
 
-        // Face player
-        Vector2 dirToPlayer = (target.position - transform.position).normalized;
-        spriteRenderer.flipX = dirToPlayer.x < 0;
+        Vector2 dir = (target.position - transform.position).normalized;
+        spriteRenderer.flipX = dir.x < 0;
 
-        // Play actual attack animation
         animator.SetTrigger("EnemyAttacking");
-
-        // Wait for hit frame / attack animation
         yield return new WaitForSeconds(0.5f);
 
-        // Deal damage if still in range
         if (playerInAttackRange && target != null)
         {
             PlayerController player = target.GetComponent<PlayerController>();
-            if(player != null)
-            {
-                player.TakeDamage(attackDamage);
-            }
+            if (player != null) player.TakeDamage(attackDamage, this.gameObject);
         }
 
-        // Optional: small pause after attack
         yield return new WaitForSeconds(0.4f);
-
-        isAttacking = false; // allows next attack or stance
+        isAttacking = false;
     }
+    #endregion
 
-
-    ////
+    #region Movement
     void Patrol()
     {
         if (patrolPoints.Length == 0) return;
         Transform patrolTarget = patrolPoints[currentPatrolIndex];
         transform.position = Vector2.MoveTowards(transform.position, patrolTarget.position, speed * Time.deltaTime);
-        
+
         Vector2 moveDir = (patrolTarget.position - transform.position).normalized;
-
-
-        // Flip sprite based on x-direction
-        if (moveDir.x > 0.01f)
-            spriteRenderer.flipX = false;
-        else if (moveDir.x < -0.01f)
-            spriteRenderer.flipX = true;
-
-        // Animation
+        spriteRenderer.flipX = moveDir.x < 0;
         animator.SetBool("EnemyMoving", true);
 
-        // Check if reached patrol point
         if (Vector2.Distance(transform.position, patrolTarget.position) < 0.1f)
         {
-            isWaiting = true;
-            currentPatrolIndex = loopPatrolPoints ? (currentPatrolIndex + 1) % patrolPoints.Length : Mathf.Min(currentPatrolIndex + 1, patrolPoints.Length - 1);
-            isWaiting = false;// loop patrol
+            currentPatrolIndex = loopPatrolPoints
+                ? (currentPatrolIndex + 1) % patrolPoints.Length
+                : Mathf.Min(currentPatrolIndex + 1, patrolPoints.Length - 1);
         }
-
     }
 
     void UpdatePath()
     {
         if (isChasing && seeker.IsDone())
-        {
             seeker.StartPath(rb.position, target.position, OnPathComplete);
-        }
     }
 
     void OnPathComplete(Path p)
@@ -333,44 +333,27 @@ public class Enemy : MonoBehaviour
 
     void ChasePlayer()
     {
-        if (path == null) return;
-
-        if (currentWaypoint >= path.vectorPath.Count)
-        {
-            return;
-        }
+        if (path == null || currentWaypoint >= path.vectorPath.Count) return;
 
         Vector2 direction = ((Vector2)path.vectorPath[currentWaypoint] - rb.position).normalized;
         rb.velocity = direction * speed;
 
-        // Flip sprite based on direction
-        if (direction.x >= 0.01f) spriteRenderer.flipX = false;
-        else if (direction.x <= -0.01f) spriteRenderer.flipX = true;
-
+        spriteRenderer.flipX = direction.x < 0;
         animator.SetBool("EnemyMoving", true);
 
-        float distance = Vector2.Distance(rb.position, path.vectorPath[currentWaypoint]);
-        if (distance < nextWaypointDistance)
-        {
+        if (Vector2.Distance(rb.position, path.vectorPath[currentWaypoint]) < nextWaypointDistance)
             currentWaypoint++;
-        }
     }
-
-    
 
     private IEnumerator IdleCheckCoroutine()
     {
         isIdleChecking = true;
         isChasing = false;
         rb.velocity = Vector2.zero;
-        
         animator.SetBool("EnemyMoving", false);
-        
-        // Wait for idle duration
+
         yield return new WaitForSeconds(idleCheckDuration);
 
-
-        /// After idle, check again
         DetectPlayer();
         if (playerDetected)
         {
@@ -379,9 +362,78 @@ public class Enemy : MonoBehaviour
         }
 
         isIdleChecking = false;
+    }
+    #endregion
 
+    #region Combat
+    public void TakeDamage(int damage)
+    {
+        health -= damage;
+        StartCoroutine(BlinkRed(0.15f, 5));
+        if (health <= 0) Die();
     }
 
+    public void ApplyKnockback(Vector2 force)
+    {
+        rb.AddForce(force, ForceMode2D.Impulse);
+    }
+
+    public IEnumerator BlinkRed(float duration, int flashCount)
+    {
+        if (spriteRenderer == null) yield break;
+        float flashDuration = duration / (flashCount * 2);
+        for (int i = 0; i < flashCount; i++)
+        {
+            spriteRenderer.color = Color.red;
+            yield return new WaitForSeconds(flashDuration);
+            spriteRenderer.color = Color.white;
+            yield return new WaitForSeconds(flashDuration);
+        }
+    }
+
+    private void Die()
+    {
+        if (isDead) return; // prevent multiple triggers
+        isDead = true;
+
+        // Stop movement and attacks
+        rb.velocity = Vector2.zero;
+        StopAllCoroutines(); // optional: stops ongoing attack/provoke coroutines
+
+        // Trigger death animation
+        animator.SetTrigger("Died");
+
+        // Disable collider so it doesn't interfere with player or enemies
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null) col.enabled = false;
+
+        // Grant 3 stars to the player
+        if (IntoxicationStarsManager.Instance != null)
+        {
+            IntoxicationStarsManager.Instance.AddStars(3);
+        }
+
+        // Destroy after animation finishes
+        StartCoroutine(DestroyAfterAnimation()); ;
+    }
+
+    private IEnumerator DestroyAfterAnimation()
+    {
+        // Wait for the length of the death animation
+        float deathAnimLength = 1f; // default 1 second
+        if (animator != null)
+        {
+            AnimatorClipInfo[] clips = animator.GetCurrentAnimatorClipInfo(0);
+            if (clips.Length > 0)
+                deathAnimLength = clips[0].clip.length;
+        }
+
+        yield return new WaitForSeconds(deathAnimLength);
+        // Increment kill counter
+        KillCounter.instance.AddKill();
+        Destroy(gameObject, 1.9f);
+    }
+    #endregion
 
     private void OnDrawGizmosSelected()
     {
@@ -390,45 +442,5 @@ public class Enemy : MonoBehaviour
 
         Gizmos.color = playerInAttackRange ? Color.blue : Color.black;
         Gizmos.DrawWireSphere(transform.position, attackDistance);
-
-    }
-
-    ////////////////////////////////////////////////////
-    ///
-    public void TakeDamage(int damage)//, GameObject attacker)
-    {
-        health -= damage;
-        
-        StartCoroutine(BlinkRed(0.15f, 5));
-
-        if (health <= 0)
-        {
-            Die();
-        }
-    }
-
-    public void ApplyKnockback(Vector2 force)
-    {
-        
-        rb.AddForce(force, ForceMode2D.Impulse);
-    }
-
-    public IEnumerator BlinkRed(float duration, int flashCount)
-    {
-        if (spriteRenderer == null) yield break;
-        float flashDuration = duration / (flashCount * 2); // time per half-flash
-        for (int i = 0; i < flashCount; i++)
-        {
-            spriteRenderer.color = Color.red; // red on
-            yield return new WaitForSeconds(flashDuration);
-            spriteRenderer.color = Color.white; // back to normal
-            yield return new WaitForSeconds(flashDuration);
-        }
-    }
-
-    private void Die()
-    {
-        // simple destroy for now
-        Destroy(gameObject);
     }
 }

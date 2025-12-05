@@ -16,8 +16,17 @@ public class QuestUI : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        if (Instance == null)
+        {
+            Instance = this;
+
+            DontDestroyOnLoad(gameObject);
+            DDOLTracker.Register(gameObject); // <- Track this DDOL object
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     void Start()

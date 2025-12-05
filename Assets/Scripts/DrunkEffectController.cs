@@ -31,12 +31,17 @@ public class DrunkEffectController : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (Instance == null)
+        {
+            Instance = this;
+
+            DontDestroyOnLoad(gameObject);
+            //DDOLTracker.Register(gameObject); // <- Track this DDOL object
+        }
+        else
         {
             Destroy(gameObject);
-            return;
         }
-        Instance = this;
 
         if (postProcessVolume != null)
         {
@@ -130,5 +135,8 @@ public class DrunkEffectController : MonoBehaviour
         if (lensDistortion != null) lensDistortion.intensity.value = 0f;
         if (chromaticAberration != null) chromaticAberration.intensity.value = 0f;
         if (depthOfField != null) depthOfField.focalLength.value = 90f;
+
+        PlayerIntoxication.IntoxicationLevel level = intoxication.currentLevel;
+        IntoxicationUIController.Instance.UpdateIntoxicationUI(level, 0f);
     }
 }

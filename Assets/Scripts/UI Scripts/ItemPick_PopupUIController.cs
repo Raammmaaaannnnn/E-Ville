@@ -16,13 +16,14 @@ public class ItemPick_PopupUIController : MonoBehaviour
 
     private void Awake()
     {
-        if(Instance == null)
+        if (Instance == null)
         {
             Instance = this;
+
+            
         }
         else
         {
-            Debug.LogError("Multiple PickupUI Manager instances detected!! Destroy Extra One");
             Destroy(gameObject);
         }
     }

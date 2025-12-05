@@ -21,7 +21,7 @@ public class HotbarController : MonoBehaviour
         hotbarKeys = new Key[slotCount];
         for(int i = 0; i < slotCount; i++)
         {
-            hotbarKeys[i] = i < 4 ? (Key)((int)Key.Digit1 + i) : Key.Digit0;
+            hotbarKeys[i] = i <= 4 ? (Key)((int)Key.Digit1 + i) : Key.Digit0;
         }
     }
 
@@ -33,6 +33,7 @@ public class HotbarController : MonoBehaviour
             if (Keyboard.current[hotbarKeys[i]].wasPressedThisFrame)
             {
                 UseItemInSlot(i);
+                
             }
         }
     }
@@ -58,6 +59,8 @@ public class HotbarController : MonoBehaviour
                 slot.currentItem = null;
             }
         }
+
+        
 
     }
 

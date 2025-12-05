@@ -22,7 +22,27 @@ public class IntoxicationStarsUIController : MonoBehaviour
             return;
         }
         Instance = this;
-        ResetStars();
+    }
+
+    private void Start()
+    {
+        if (IntoxicationStarsManager.Instance != null)
+        {
+            IntoxicationStarsManager.Instance.OnStarsChanged += UpdateStars;
+            // initialize UI
+            UpdateStars(IntoxicationStarsManager.Instance.GetStars());
+        }
+        else
+        {
+            // If manager not present, default to 0
+            UpdateStars(0);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (IntoxicationStarsManager.Instance != null)
+            IntoxicationStarsManager.Instance.OnStarsChanged -= UpdateStars;
     }
 
     /// <summary>

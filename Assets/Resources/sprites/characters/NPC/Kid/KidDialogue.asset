@@ -18,7 +18,7 @@ MonoBehaviour:
   - 'Hey '
   - Can you help me?
   - Can you get the jars?
-  - Thanks.
+  - They might be in the cask and boxes
   - Oh well...
   - 'I need more '
   - 'Hurrayy!! '
@@ -38,7 +38,7 @@ MonoBehaviour:
     givesQuest: 0100
     spendsCoins: 0000
     coinCost: 
-    alcoholRewardID: 
+    RewardID: 
   - dialogueIndex: 2
     choices:
     - Sure I will..
@@ -47,7 +47,7 @@ MonoBehaviour:
     givesQuest: 0100
     spendsCoins: 0000
     coinCost: 
-    alcoholRewardID: 
+    RewardID: 
   questInProgressIndex: 5
   questCompleteIndex: 6
   quest: {fileID: 11400000, guid: 72e8cb8b43ca1194191782953f7c5f39, type: 2}

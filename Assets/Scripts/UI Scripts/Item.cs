@@ -14,12 +14,14 @@ public class Item : MonoBehaviour
     public int variantID = 0; // Only used if isVariant = true
     private TMP_Text quantityText;
     private bool IsAlcoholVariant;
+    public bool isHealthPickup;
+    
 
     [HideInInspector] public bool isUIItem = true;
 
     private void Awake()
     {
-
+        
         quantityText = GetComponentInChildren<TMP_Text>();
         UpdateQuantityDisplay();
     }
@@ -76,6 +78,7 @@ public class Item : MonoBehaviour
     public virtual void UseItem()
     {
         IsAlcoholVariant = false; // <-- reset every time before checks
+        isHealthPickup = false; // <-- reset every time before checks
         // By name check
         string lowerName = Name.ToLower();
         if(lowerName.Contains("cosita") || lowerName.Contains("pina") || lowerName.Contains("blu"))
@@ -94,12 +97,29 @@ public class Item : MonoBehaviour
         {
             Debug.Log("Using alcohol " + Name);
             DrunkEffectController.Instance.ApplyDrunkEffect();
+            return;
         }
-        else
+        // Detect health pickup
+        if (lowerName.Contains("meds") || (ID == 2 && variantID == 1))
         {
-            Debug.Log("Using item " + Name);
+            isHealthPickup = true;
         }
-        
+
+        if (isHealthPickup)
+        {
+            // Actually add health here
+            bool healed = PlayerController.instance.AddHealth(50); // example amount
+            if (healed) // only play sound if health was added
+            {
+                SoundEffectManager.Play("MedKit");
+            }
+            Debug.Log("Using " + Name + " (healed: " + healed + ")");
+            return;
+        }
+
+        Debug.Log("Using " + Name);
+
+
     }
     public virtual void ShowPopup()
     {

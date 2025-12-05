@@ -9,12 +9,17 @@ public class RewardsController : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (Instance == null)
+        {
+            Instance = this;
+
+            DontDestroyOnLoad(gameObject);
+            //DDOLTracker.Register(gameObject); // <- Track this DDOL object
+        }
+        else
         {
             Destroy(gameObject);
-            return;
         }
-        Instance = this;
     }
 
     public void GiveQuestReward(Quest quest)

@@ -3,6 +3,7 @@ using System.Collections;
 //using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
@@ -15,6 +16,8 @@ public class PlayerController : MonoBehaviour
     private Vector2 moveInput;
     private Animator animator;
     private SpriteRenderer spriteRenderer;
+    public Image healthBarFill; // assign in Inspector
+    public float healthBarSpeed = 0.15f; // speed of fill animation
 
     [Header("Health Settings")]
     public float maxHealth = 100f;
@@ -35,14 +38,47 @@ public class PlayerController : MonoBehaviour
     // Runtime
     private bool EnemyInAttackRange = false;
     private Collider2D detectedEnemyCollider = null; // last hit collider (if any)
+    public string enemy2Tag = "AttackerNPC";
+
+    // Runtime
+    private bool Enemy2InAttackRange = false;
+    private Collider2D detectedEnemy2Collider = null; // last hit collider (if any)
 
     // Add runtime flag for NPC detection
     private bool NPCInAttackRange = false;
     private Collider2D detectedNPCCollider = null;
 
+    private Collider2D detectedDestructibleCollider = null;
+    private bool destructibleInRange = false;
+
+    public Transform policeStationRespawn;
+    public Transform hospitalRespawn;
+    public Transform defaultRespawn;
+    
+
     // runtime
     private PlayerIntoxication playerIntox;
+    private PlayerInput playerInput;
+    public static PlayerController instance;
+    private void Awake()
+    {
+        if (instance == null)
+        {
+            instance = this;
 
+            DontDestroyOnLoad(gameObject);
+            DDOLTracker.Register(gameObject); // <- Track this DDOL object
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+        playerInput = GetComponent<PlayerInput>();
+        if (playerInput != null)
+        {
+            playerInput.enabled = true; // ensure input is active
+        }
+    }
     // Start is called before the first frame update
     void Start()
     {
@@ -50,8 +86,10 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-
+        
         currentHealth = maxHealth;
+        if (healthBarFill != null)
+            healthBarFill.fillAmount = currentHealth / maxHealth;
 
         // cache player intoxication (optional null fallback)
         playerIntox = FindObjectOfType<PlayerIntoxication>();
@@ -65,12 +103,28 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(PauseController.IsGamePaused)
+        if (PauseController.IsGamePaused)
         {
+            // Stop movement
             rb.velocity = Vector2.zero;
+
+            // Stop animations
             animator.SetBool("isMoving?", false);
+
+            // Stop footsteps
             StopFootsteps();
+
+            // Disable player input completely
+            if (playerInput != null && playerInput.enabled)
+                playerInput.enabled = false;
+
             return;
+        }
+        else
+        {
+            // Re-enable input after unpausing
+            if (playerInput != null && !playerInput.enabled)
+                playerInput.enabled = true;
         }
 
         AdjustPlayerFacingDirection();
@@ -131,8 +185,33 @@ public class PlayerController : MonoBehaviour
     {
         if (!context.performed) return; // only trigger once per press
 
+
+        // Prevent attack if player is not intoxicated
+        if (playerIntox == null || playerIntox.currentLevel < PlayerIntoxication.IntoxicationLevel.Orange)
+        {
+            Debug.Log("Cannot attack: Player is not intoxicated enough!");
+            return;
+        }
+        // -----------------------------------
+        // 1. Destructible Object Attack
+        // -----------------------------------
+        if (destructibleInRange && detectedDestructibleCollider != null)
+        {
+            Destructible destructible = detectedDestructibleCollider.GetComponentInParent<Destructible>();
+            if (destructible != null)
+            {
+
+                SoundEffectManager.Play("Punch");
+                animator.SetTrigger("Attack");
+                destructible.Hit();
+                return; // stop here so we don't double-hit enemies
+            }
+        }
+
         if (EnemyInAttackRange && detectedEnemyCollider != null)
         {
+
+            SoundEffectManager.Play("Punch");
             // Trigger attack animation
             animator.SetTrigger("Attack");
 
@@ -143,56 +222,170 @@ public class PlayerController : MonoBehaviour
             {
                 enemyScript.TakeDamage(attackDamage);//, gameObject);
             }
-           
+
+            
+
         }
+
+        if (Enemy2InAttackRange && detectedEnemy2Collider != null)
+        {
+
+            SoundEffectManager.Play("Punch");
+            // Trigger attack animation
+            animator.SetTrigger("Attack");
+
+            // Deal damage to AttackerNPC
+            AttackerNPC attackerScript = detectedEnemy2Collider.GetComponent<AttackerNPC>();
+            if (attackerScript != null)
+            {
+                attackerScript.TakeDamage(attackDamage); // spawned attackers
+            }
+
+        }
+
         // ------------------- NPC attack -------------------
         if (NPCInAttackRange && detectedNPCCollider != null)
         {
             NPC npcScript = detectedNPCCollider.GetComponent<NPC>();
-            if (npcScript != null && npcScript.isAttackable)
+            if (npcScript != null)
             {
+
+                SoundEffectManager.Play("Punch");
                 animator.SetTrigger("Attack");
                 npcScript.TakeDamage(attackDamage);
             }
         }
+
+
     }
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(int damage, GameObject attacker = null)
     {
         currentHealth -= damage;
+        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+
+        if (healthBarFill != null)
+            StartCoroutine(UpdateHealthBar(currentHealth / maxHealth));
+
+        StartCoroutine(BlinkRed(0.15f, 5));
+        SoundEffectManager.Play("Hurt");
+
         if (currentHealth <= 0)
         {
-            // death or respawn logic can go here
             Debug.Log("Player died");
+
+            animator.SetTrigger("Died");
+            
+            StartCoroutine(RespawnPlayer(attacker));
             return;
         }
 
-        // Blink effect
-        StartCoroutine(BlinkEffect(0.15f, 5));
+        
     }
 
-    private IEnumerator BlinkEffect(float duration, int flashCount)
+    private IEnumerator RespawnPlayer(GameObject attacker)
     {
-        if (spriteRenderer == null) yield break;
-        float flashDuration = duration / (flashCount * 2); // time per half-flash
-                                                           // Store original color
-        Color originalColor = spriteRenderer.color;
+       
+        // Disable player controls (implement your control disabling here)
+        PlayerController playerMovement = GetComponent<PlayerController>();
+        if (playerMovement != null) playerMovement.enabled = false;
 
-        // Create faded version (half-transparent)
-        Color fadedColor = originalColor;
-        fadedColor.a = 0.5f; // 50% transparent
+        // Hide player visually
+        SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        sr.enabled = false;
 
-        for (int i = 0; i < flashCount; i++)
+        
+        // Wait briefly (death animation, etc.)
+        yield return new WaitForSeconds(0.9f);
+
+        // Determine respawn point based on attacker
+        Transform respawnPoint = defaultRespawn; // default
+
+        if (attacker != null)
         {
-            spriteRenderer.color = fadedColor; // fade out
-            yield return new WaitForSeconds(flashDuration);
-
-            spriteRenderer.color = originalColor; // fade back
-            yield return new WaitForSeconds(flashDuration);
+            if (attacker.CompareTag("AttackerNPC") && hospitalRespawn != null)
+            {
+                respawnPoint = hospitalRespawn;
+            }
+            else if (attacker.CompareTag("Enemy") && policeStationRespawn != null)
+            {
+                respawnPoint = policeStationRespawn;
+            }
         }
 
-        // ensure we end on normal color
-        spriteRenderer.color = originalColor;
+        // **Move player to respawn point**
+        if (respawnPoint != null)
+        {
+            transform.position = respawnPoint.position;
+        }
+
+        animator.SetBool("Respawn", true);
+
+        currentHealth = maxHealth;
+
+        ResetAfterSleep();
+        // Show player visually again
+        sr.enabled = true;
+
+        // Blink to indicate respawn invincibility
+        int blinkTimes = 5;
+        float blinkDuration = 0.15f;
+        for (int i = 0; i < blinkTimes; i++)
+        {
+            sr.enabled = false;
+            yield return new WaitForSeconds(blinkDuration);
+            sr.enabled = true;
+            yield return new WaitForSeconds(blinkDuration);
+        }
+
+        // Re-enable controls
+        if (playerMovement != null) playerMovement.enabled = true;
+
+        Debug.Log($"Player respawned at {respawnPoint.name}");
+    }
+
+
+    public bool AddHealth(int amount)
+    {
+        if (amount <= 0 || currentHealth >= maxHealth)
+            return false; // nothing to add
+
+        float previousHealth = currentHealth;
+        currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
+
+        if (healthBarFill != null)
+            StartCoroutine(UpdateHealthBar(currentHealth / maxHealth));
+
+        Debug.Log($"Player healed: {currentHealth - previousHealth} | Current Health: {currentHealth}/{maxHealth}");
+        return currentHealth > previousHealth; // true if health increased
+    }
+
+    private IEnumerator UpdateHealthBar(float targetFill)
+    {
+        float startFill = healthBarFill.fillAmount;
+        float elapsed = 0f;
+
+        while (elapsed < healthBarSpeed)
+        {
+            elapsed += Time.deltaTime;
+            healthBarFill.fillAmount = Mathf.Lerp(startFill, targetFill, elapsed / healthBarSpeed);
+            yield return null;
+        }
+
+        healthBarFill.fillAmount = targetFill;
+    }
+
+    public IEnumerator BlinkRed(float duration, int flashCount)
+    {
+        if (spriteRenderer == null) yield break;
+        float flashDuration = duration / (flashCount * 2);
+        for (int i = 0; i < flashCount; i++)
+        {
+            spriteRenderer.color = Color.red;
+            yield return new WaitForSeconds(flashDuration);
+            spriteRenderer.color = Color.white;
+            yield return new WaitForSeconds(flashDuration);
+        }
     }
 
     private void AdjustPlayerFacingDirection()
@@ -223,7 +416,10 @@ public class PlayerController : MonoBehaviour
         EnemyInAttackRange = false;
 
         detectedNPCCollider = null; 
-        NPCInAttackRange = false;   
+        NPCInAttackRange = false;
+
+        destructibleInRange = false;
+        detectedDestructibleCollider = null;
         // get mouse world position and direction from player to mouse
         Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         Vector3 dir = (mouseWorld - transform.position);
@@ -243,6 +439,8 @@ public class PlayerController : MonoBehaviour
         {
             if (hit.collider == null) continue;
 
+
+
             // Enemy detection
             if (hit.collider.CompareTag(enemyTag))
             {
@@ -250,49 +448,52 @@ public class PlayerController : MonoBehaviour
                 detectedEnemyCollider = hit.collider;
             }
 
+            // Enemy detection
+            if (hit.collider.CompareTag(enemy2Tag))
+            {
+                Enemy2InAttackRange = true;
+                detectedEnemy2Collider = hit.collider;
+            }
+
             // NPC detection
             NPC npcScript = hit.collider.GetComponent<NPC>();
             if (npcScript != null)
             {
-                // Set NPC attackable ONLY if player intox >= Orange
-                if (playerIntox != null && playerIntox.currentLevel >= PlayerIntoxication.IntoxicationLevel.Orange)
-                {
-                    npcScript.isAttackable = true;
-                }
-                else
-                {
-                    npcScript.isAttackable = false;
-                }
-
                 // Update runtime detection
                 NPCInAttackRange = true;
                 detectedNPCCollider = hit.collider;
             }
+
+            // Destructible detection
+            Destructible destructible = hit.collider.GetComponentInParent<Destructible>();
+            if (destructible != null)
+            {
+                destructibleInRange = true;
+                detectedDestructibleCollider = hit.collider;
+            }
+
         }
-        //RaycastHit2D hit = Physics2D.Linecast(startPos, endPos, attackLayer);
-
-        //if (hit.collider != null)
-        //{
-        //    // If you also want to ensure a specific tag:
-        //    if (string.IsNullOrEmpty(enemyTag) || hit.collider.CompareTag(enemyTag))
-        //    {
-        //        EnemyInAttackRange = true;
-        //        detectedEnemyCollider = hit.collider;
-        //        Debug.Log("Enemy detected for attack: " + hit.collider.name);
-        //    }
-        //    else
-        //    {
-        //        EnemyInAttackRange = false;
-        //    }
-        //}
-        //else
-        //{
-        //    EnemyInAttackRange = false;
-        //}
-
+        
     }
 
+    public void ResetAfterSleep()
+    {
+        // 1. Restore Health
+        currentHealth = maxHealth;
+        if (healthBarFill != null)
+            healthBarFill.fillAmount = 1f;
 
+        // 2. Reset Wanted/Star Level
+        IntoxicationStarsManager.Instance?.ResetStars();
+
+        // 3. Remove Drunk Effect
+        DrunkEffectController.Instance?.ResetEffects();
+
+        // Stop attacker spawning immediately
+        HouseSpawnManager.Instance?.StopChaosMode();
+
+        Debug.Log("Player reset after sleep.");
+    }
 
     // Draw gizmos to visualize the attack check in the Scene view
     private void OnDrawGizmosSelected()
@@ -338,6 +539,16 @@ public class PlayerController : MonoBehaviour
 
             Gizmos.color = Color.cyan;
             Gizmos.DrawWireSphere(detectedNPCCollider.transform.position, 0.2f);
+        }
+
+        
+        if (detectedDestructibleCollider != null)
+        {
+            Gizmos.color = destructibleInRange ? Color.black : Color.gray;
+            Gizmos.DrawLine(transform.position, endPos);
+
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(detectedDestructibleCollider.transform.position, 0.2f);
         }
 
         //// Small sphere at the end of the check

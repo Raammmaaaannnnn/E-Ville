@@ -8,12 +8,14 @@ using UnityEditor;
 
 public class NPC : MonoBehaviour, IInteractable
 {
+    
     public NPCDialogue dialogueData;
-
+    public bool isCivilian = true;
     private DialogueController dialogueUI;  
     private int dialogueIndex;
-    private bool isTyping, isDialogueActive;
-
+    public  bool isTyping, isDialogueActive;
+    private Rigidbody2D rb;
+    
     [Header("Health")]
     public int health = 50;
    
@@ -52,6 +54,7 @@ public class NPC : MonoBehaviour, IInteractable
 
     private void Awake()
     {
+
         // Optional: cache the instance once
         if (DialogueController.Instance != null)
         {
@@ -164,10 +167,24 @@ public class NPC : MonoBehaviour, IInteractable
         Debug.Log($"{name} took {damage} damage, health now {health}");
         if (health <= 0)
         {
+           
             Debug.Log($"{name} died");
-            Destroy(gameObject);
+            animator.SetTrigger("Died");
+
+            if (isCivilian)
+            {
+                // Instant 2-star penalty
+                IntoxicationStarsManager.Instance?.AddStars(2);
+            }
+
+            Destroy(gameObject, 1.2f); // after death animation
+                                       // Increment kill counter
+            KillCounter.instance.AddKill();
             return;
         }
+
+        
+
 
         // Trigger fleeing
         if (!isFleeing)
@@ -177,6 +194,7 @@ public class NPC : MonoBehaviour, IInteractable
         }
 
     }
+
 
     void StartFleeing()
     {
@@ -283,17 +301,20 @@ public class NPC : MonoBehaviour, IInteractable
     
     void StartDialogue()
     {
+        
         // Ensure dialogueUI is assigned
         if (dialogueUI == null)
         {
+
             if (DialogueController.Instance == null)
             {
                 Debug.LogWarning("⚠️ DialogueController.Instance is null — no UI found!");
                 return;
             }
             dialogueUI = DialogueController.Instance;
+            
         }
-
+        dialogueUI.currentNPC = this;
         //sync with quest
         SyncQuestState();
 
@@ -325,7 +346,7 @@ public class NPC : MonoBehaviour, IInteractable
         dialogueUI.SetNPCInfo(dialogueData.npcName, dialogueData.npcPotrait);
         dialogueUI.ShowDialogueUI(true);
         
-        PauseController.SetPause(true);
+        //PauseController.SetPause(true);
         DisplayCurrentLine();
     }
 
@@ -491,13 +512,15 @@ public class NPC : MonoBehaviour, IInteractable
         isDialogueActive = false;
         dialogueUI.SetDialogueText("");
         dialogueUI.ShowDialogueUI(false);
-        PauseController.SetPause(false);
+        //PauseController.SetPause(false);
 
 
         canPatrol = true; // Resume patrol after talking
         
 
     }
+
+    
 
 
     void HandleQuestCompletion(Quest quest)

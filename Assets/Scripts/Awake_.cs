@@ -1,20 +1,22 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Awake_ : MonoBehaviour
 {
-    
-    void Awake()
+    public static Awake_ Instance;
+    private void Awake()
     {
-        // Check if there’s already an identical object (same name)
-        GameObject[] objs = GameObject.FindGameObjectsWithTag(gameObject.tag);
+        if (Instance == null)
+        {
+            Instance = this;
 
-        if (objs.Length > 1)
+            DontDestroyOnLoad(gameObject);
+            DDOLTracker.Register(gameObject); // <- Track this DDOL object
+        }
+        else
         {
             Destroy(gameObject);
-            return;
         }
-
-        DontDestroyOnLoad(gameObject);
-        
     }
 }

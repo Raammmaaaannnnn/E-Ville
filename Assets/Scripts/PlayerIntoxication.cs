@@ -20,6 +20,7 @@ public class PlayerIntoxication : MonoBehaviour
 
     private void Start()
     {
+       
         if (IntoxicationUIController.Instance != null)
             IntoxicationUIController.Instance.UpdateIntoxicationUI(currentLevel, 0f);
     }

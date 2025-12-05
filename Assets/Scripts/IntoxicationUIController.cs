@@ -18,12 +18,15 @@ public class IntoxicationUIController : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (Instance == null)
+        {
+            Instance = this;
+
+        }
+        else
         {
             Destroy(gameObject);
-            return;
         }
-        Instance = this;
     }
 
     public void UpdateIntoxicationUI(PlayerIntoxication.IntoxicationLevel level, float progress)

@@ -12,6 +12,7 @@ TagManager:
   - CineCamera
   - MinimapCamera
   - NPC
+  - AttackerNPC
   layers:
   - Default
   - TransparentFX

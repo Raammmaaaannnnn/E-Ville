@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 
 public class InventoryController : MonoBehaviour
@@ -23,12 +25,19 @@ public class InventoryController : MonoBehaviour
 
     private void Awake()
     {
-        if(Instance != null && Instance != this)
+        if (Instance == null)
+        {
+            Instance = this;
+
+            DontDestroyOnLoad(gameObject);
+            DDOLTracker.Register(gameObject); // <- Track this DDOL object
+        }
+        else
         {
             Destroy(gameObject);
-            return;
         }
-        Instance = this;
+
+        
     }
 
 
@@ -37,16 +46,7 @@ public class InventoryController : MonoBehaviour
     {
         itemDictionary = FindAnyObjectByType<ItemDictionary>();
         RebuildItemCounts();
-        //for (int i = 0; i < slotCount; i++)
-        //{ 
-        //    Slot slot = Instantiate(slotPrefab, inventoryPanel.transform).GetComponent<Slot>(); 
-        //    if (i < itemPrefabs.Length) 
-        //    { 
-        //        GameObject item = Instantiate(itemPrefabs[i], slot.transform); 
-        //        item.GetComponent<RectTransform>().anchoredPosition = Vector2.zero; 
-        //        slot.currentItem = item; 
-        //    }
-        //}
+       
     }
 
     public void RebuildItemCounts()

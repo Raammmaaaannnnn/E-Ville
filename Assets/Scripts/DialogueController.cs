@@ -13,13 +13,16 @@ public class DialogueController : MonoBehaviour
     public Image potraitImage;
     public Transform choiceContainer;
     public GameObject choiceButtonPrefab;
+    public NPC currentNPC;
     // Start is called before the first frame update
     void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
+
             DontDestroyOnLoad(gameObject);
+            DDOLTracker.Register(gameObject); // <- Track this DDOL object
         }
         else
         {
@@ -47,6 +50,27 @@ public class DialogueController : MonoBehaviour
     public void ClearChoices()
     {
         foreach(Transform child in choiceContainer) Destroy(child.gameObject);
+    }
+
+    public void Onpress()
+    {
+        // Find the NPC in the scene currently tagged "NPC" and with active dialogue
+        NPC currentNPC = null;
+        GameObject[] npcs = GameObject.FindGameObjectsWithTag("NPC");
+        foreach (GameObject go in npcs)
+        {
+            NPC candidate = go.GetComponent<NPC>();
+            if (candidate != null && candidate.isDialogueActive)
+            {
+                currentNPC = candidate;
+                break;
+            }
+        }
+
+        if (currentNPC == null) return;
+
+        currentNPC.isTyping = false;
+        currentNPC.EndDialogue();
     }
 
     public GameObject CreateChoiceButton(string choiceText, UnityEngine.Events.UnityAction onClick)
